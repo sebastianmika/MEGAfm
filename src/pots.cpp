@@ -229,7 +229,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 0;
-
 								sendCC(number, data >> 1);
 							}
 							break; // detune
@@ -237,10 +236,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[1] = data;
 							updateFMifNecessary(1);
+							showNumber(1, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 1;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // multiple
@@ -248,10 +247,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[2] = data;
 							updateFMifNecessary(2);
+							showNumber(2, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 2;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // op level
@@ -259,10 +258,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[4] = data;
 							updateFMifNecessary(4);
+							showNumber(4, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 4;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // attack
@@ -270,10 +269,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[5] = data;
 							updateFMifNecessary(5);
+							showNumber(5, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 5;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // decay1
@@ -281,10 +280,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[7] = data;
 							updateFMifNecessary(7);
+							showNumber(7, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 7;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // sustain
@@ -292,10 +291,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[6] = data;
 							updateFMifNecessary(9);
+							showNumber(6, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 6;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // sustain rate
@@ -303,10 +302,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[8] = data;
 							updateFMifNecessary(8);
+							showNumber(8, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 8;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // release
@@ -338,10 +337,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[19] = data;
 							updateFMifNecessary(19);
+							showNumber(19, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 19;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // multiple
@@ -349,10 +348,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[20] = data;
 							updateFMifNecessary(20);
+							showNumber(20, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 20;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // op level
@@ -360,10 +359,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[22] = data;
 							updateFMifNecessary(22);
+							showNumber(22, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 22;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // attack WAS 59
@@ -371,10 +370,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[23] = data;
 							updateFMifNecessary(23);
+							showNumber(23, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 23;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // decay1 WAS 50
@@ -382,10 +381,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[25] = data;
 							updateFMifNecessary(25);
+							showNumber(25, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 25;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // sustain WAS 60
@@ -393,10 +392,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[24] = data;
 							updateFMifNecessary(24);
+							showNumber(24, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 24;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // sustain rate WAS 55
@@ -404,10 +403,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[26] = data;
 							updateFMifNecessary(26);
+							showNumber(26, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 26;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // release WAS 52
@@ -440,10 +439,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[10] = data;
 							updateFMifNecessary(10);
+							showNumber(10, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 10;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // multiple
@@ -451,10 +450,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[11] = data;
 							updateFMifNecessary(11);
+							showNumber(11, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 11;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // op level
@@ -462,10 +461,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[13] = data;
 							updateFMifNecessary(13);
+							showNumber(13, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 13;
-								showNumber(targetPot, data);
 								sendCC(49, data >> 1);
 							}
 							break; // attack
@@ -473,10 +472,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[14] = data;
 							updateFMifNecessary(14);
+							showNumber(14, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 14;
-								showNumber(targetPot, data);
 								sendCC(50, data >> 1);
 							}
 							break; // decay1
@@ -484,10 +483,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[16] = data;
 							updateFMifNecessary(16);
+							showNumber(16, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 16;
-								showNumber(targetPot, data);
 								sendCC(51, data >> 1);
 							}
 							break; // sustain
@@ -495,10 +494,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[15] = data;
 							updateFMifNecessary(15);
+							showNumber(15, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 15;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // sustain rate
@@ -506,10 +505,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[17] = data;
 							updateFMifNecessary(17);
+							showNumber(17, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 17;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // release
@@ -534,7 +533,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 27;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // detune
@@ -542,10 +540,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[28] = data;
 							updateFMifNecessary(28);
+							showNumber(28, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 28;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // multiple
@@ -553,10 +551,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[29] = data;
 							updateFMifNecessary(29);
+							showNumber(29, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 29;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // op level
@@ -564,10 +562,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[31] = data;
 							updateFMifNecessary(31);
+							showNumber(31, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 31;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // attack
@@ -575,10 +573,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[32] = data;
 							updateFMifNecessary(32);
+							showNumber(32, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 32;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // decay1
@@ -586,10 +584,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[34] = data;
 							updateFMifNecessary(34);
+							showNumber(34, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 34;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // sustain
@@ -597,10 +595,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[33] = data;
 							updateFMifNecessary(33);
+							showNumber(33, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 33;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // sustain rate
@@ -608,10 +606,10 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[35] = data;
 							updateFMifNecessary(35);
+							showNumber(35, data);
 							if (!isMidi) {
 								isFader = true;
 								targetPot = 35;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // release
@@ -653,9 +651,9 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 							fmBase[42] = data;
 							updateFMifNecessary(42);
+							showNumber(42, data);
 							if (!isMidi) {
 								targetPot = 42;
-								showNumber(targetPot, data);
 								sendCC(number, (1 + (data >> 5)));
 							}
 							break; // algo
@@ -664,9 +662,9 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[43] = data;
 							updateFMifNecessary(43);
+							showNumber(43, data);
 							if (!isMidi) {
 								targetPot = 43;
-								showNumber(targetPot, data);
 								sendCC(number, (data >> 1));
 							}
 							break; // feedback
@@ -732,9 +730,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 									} // show number of bars (b1 or b2 or b4)
 
 								} else {
-									if (!isMidi) {
-										ledNumber(data >> 2);
-									}
+									ledNumber(data >> 2);
 								}
 								if (!isMidi) {
 									targetPot = 36;
@@ -747,9 +743,9 @@ void movedPot(byte number, byte data, bool isMidi) {
 							fmBase[37] = data;
 							updateFMifNecessary(37);
 							selectedLfo = 0;
+							showNumber(37, data);
 							if (!isMidi) {
 								targetPot = 37;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // lfo 1 depth
@@ -766,8 +762,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								if ((lfoClockEnable[1]) && (sync)) {
 									ledNumber(kArpRateDisplay[data >> 5]);
 								} else {
-									if (!isMidi)
-										ledNumber(data >> 2);
+									ledNumber(data >> 2);
 								}
 								if (!isMidi) {
 									targetPot = 38;
@@ -780,9 +775,9 @@ void movedPot(byte number, byte data, bool isMidi) {
 							fmBase[39] = data;
 							updateFMifNecessary(39);
 							selectedLfo = 1;
+							showNumber(39, data);
 							if (!isMidi) {
 								targetPot = 39;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // lfo 2 depth
@@ -804,8 +799,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								if ((lfoClockEnable[2]) && (sync)) {
 									ledNumber(kArpRateDisplay[data >> 5]);
 								} else {
-									if (!isMidi)
-										ledNumber(data >> 2);
+									ledNumber(data >> 2);
 								}
 								if (!isMidi) {
 									targetPot = 40;
@@ -818,9 +812,9 @@ void movedPot(byte number, byte data, bool isMidi) {
 							fmBase[41] = data;
 							updateFMifNecessary(41);
 							selectedLfo = 2;
+							showNumber(41, data);
 							if (!isMidi) {
 								targetPot = 41;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // lfo 3 depth
@@ -833,8 +827,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								ledNumber(kArpRateDisplay[data >> 5]);
 								arpMidiSpeedPending = data >> 5;
 							} else {
-								if (!isMidi)
-									ledNumber(data >> 2);
+								ledNumber(data >> 2);
 							}
 							if (!isMidi) {
 								targetPot = 46;
@@ -848,9 +841,9 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 							fmBase[47] = data;
 							updateFMifNecessary(47);
+							showNumber(47, data);
 							if (!isMidi) {
 								targetPot = 47;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // arp range
@@ -862,8 +855,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							if ((vibratoClockEnable) && (sync)) {
 								ledNumber(data >> 5);
 							} else {
-								if (!isMidi)
-									ledNumber(data >> 3);
+								ledNumber(data >> 3);
 							}
 							if (!isMidi) {
 								targetPot = 48;
@@ -874,9 +866,9 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showPickupAnimation = false;
 							fmBase[49] = data;
 							updateFMifNecessary(49);
+							showNumber(49, data);
 							if (!isMidi) {
 								targetPot = 49;
-								showNumber(targetPot, data);
 								sendCC(number, data >> 1);
 							}
 							break; // vibrato depth

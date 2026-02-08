@@ -9,6 +9,7 @@
 #include "voice.h"
 #include "midi.h"
 #include "pots.h"
+#include "buttons.h"
 #include "midi_pedal.hpp"
 
 static byte voiceSlot;
@@ -882,12 +883,88 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				// } else {
 				//	pedalUp();
 				// }
+			} else if (number == 70) {
+				// Set LFO shape, retrig, loop
+				//      	Square	InvSquare	Tri Saw		Random	RetrigOn	RetrigOff	LoopOn	LoopOf InvSaw
+				// Lfo1  	00		04			01	02		03      05			06			07		08		09
+				// Lfo2		10		14			11	12		13 		15			16			17		18		19
+				// Lfo3		20		24			21	22		23		25			26			27		28		29
+				byte selectedLfo = val / 10;
+				byte action = val % 10;
+				if (action == 0) {
+					invertedSquare[selectedLfo] = false;
+				} else if (action == 4) {
+					action = 0;
+					invertedSquare[selectedLfo] = true;
+				} else if (action == 3) {
+					invertedSaw[selectedLfo] = false;
+				} else if (action == 9) {
+					action = 2;
+					invertedSaw[selectedLfo] = true;
+				}
+				if (selectedLfo < 3) {
+					if (action <= 8) {
+						if (action <= 4) {
+							lfoShape[selectedLfo] = action;
+						} else if (action == 5) {
+							retrig[selectedLfo] = true;
+						} else if (action == 6) {
+							retrig[selectedLfo] = false;
+						} else if (action == 7) {
+							looping[selectedLfo] = true;
+						} else if (action == 8) {
+							looping[selectedLfo] = false;
+						}
+						lfoLedOn();
+						showLfo();
+					}
+				}
+			} else if ((number >= 71) && (number <= 73)) {
+				// Link LFO to target
+				// CC 71 = LFO1, CC72 = LFO2, CC73 = LFO3
+				//
+				// bit 0 = linked if 1 else unlinked
+				// bit 1-7 = target pot (0-50)
+				//
+				// Example:
+				// val is even (0, 2, 4, ...): not linked
+				// val is odd (1, 3, 5, ...): linked
+				// val is 0 or 1: target pot 0
+				// val is 2 or 3: target pot 1
+				//
+				// So to link to pot 10, val should be 21 (10*2 + 1) and to unlink it val should be 20 (10*2 + 0)12
+
+				byte selectedLfo = number - 71;
+				bool isLinked = bitRead(val, 0);
+				byte targetPot = val >> 1;
+				if (targetPot < 51) {
+					linked[selectedLfo][targetPot] = isLinked;
+				}
+			} else if (number == 74) {
+				// Set voice mode (0-5)
+				// Set octave offset (10-13 --> 0-3)
+				if (val <= 5) {
+					if (!mpe) {
+						voiceMode = VoiceMode(val);
+						showVoiceMode(voiceMode);
+						resetVoices();
+					}
+				} else if (val >= 10 && val <= 13) {
+					octOffset = val - 10;
+					ledNumber(octOffset);
+				}
+			} else if (number == 75) {
+				// Set glide
+				glide = val >> 3; // 0-127 becomes 0-15
+				updateGlideIncrements();
+				ledNumber(val >> 1);
 			} else {
 				if (kAllCC) {
 					movedPot(number, val << 1, 1);
 				} else {
-					if ((number != 19) && (number != 40) && (number != 16) && (number != 38))
+					if ((number != 19) && (number != 40) && (number != 16) && (number != 38)) {
 						movedPot(number, val << 1, 1);
+					}
 				}
 			}
 		}

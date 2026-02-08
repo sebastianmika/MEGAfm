@@ -11,6 +11,7 @@
 #include "pots.h"
 #include "buttons.h"
 #include "midi_pedal.hpp"
+#include "FM.h"
 
 static byte voiceSlot;
 static bool ch3Alt;
@@ -959,6 +960,14 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				glide = val >> 3; // 0-127 becomes 0-15
 				updateGlideIncrements();
 				ledNumber(val >> 1);
+			} else if (number == 76) {
+				fine = val << 1; // 0-127 becomes 0-254
+				updateFine();
+				if (fine > 127) {
+					ledNumber(map(fine, 128, 255, 0, 32));
+				} else if (fine < 128) {
+					ledNumber(map(fine, 128, 0, 0, 32));
+				}
 			} else {
 				if (kAllCC) {
 					movedPot(number, val << 1, 1);

@@ -310,7 +310,7 @@ static void handleNoteOn(byte channel, byte note, byte velocity) {
 				note += 3;
 				rootNote = note;
 
-				if (velocity) {
+				if (velocity > 0) {
 
 					// Retrigger LFOs
 					for (int i = 0; i < 3; i++) {
@@ -579,7 +579,8 @@ static void handleNoteOff(byte channel, byte note) {
 								clearNotes();
 
 								for (int i = 0; i < 12; i++) {
-									pedalOff[i] = 1;
+									ym.noteOff(i);
+									pedalOff[i] = 1;  // ToDo: not sure this is being used
 								}
 
 							} else {

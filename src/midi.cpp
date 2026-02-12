@@ -941,10 +941,16 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				byte targetPot = val >> 1;
 				if (targetPot < 51) {
 					linked[selectedLfo][targetPot] = isLinked;
+					showLink();
 				}
 			} else if (number == 74) {
 				// Set voice mode (0-5)
 				// Set octave offset (10-13 --> 0-3)
+				// Set rate scaling
+				//   * op1: 20-23
+				//   * op2: 30-33
+				//   * op3: 40-43
+				//   * op4: 50-53
 				if (val <= 5) {
 					if (!mpe) {
 						voiceMode = VoiceMode(val);
@@ -954,6 +960,27 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else if (val >= 10 && val <= 13) {
 					octOffset = val - 10;
 					ledNumber(octOffset);
+				} else if (val >= 20 && val <= 23) {
+					// Set rate scaling for operators 1-4
+					// op1 = 3
+					// op2 = 12
+					// op3 = 21
+					// op4 = 30
+					updateFMifNecessary(3);
+					fmBase[3] = (val - 20) << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
+					ledNumber(val - 20);
+				} else if (val >= 30 && val <= 33) {
+					updateFMifNecessary(12);
+					fmBase[12] = (val - 30) << 6;
+					ledNumber(val - 30);
+				} else if (val >= 40 && val <= 43) {
+					updateFMifNecessary(21);
+					fmBase[21] = (val - 40) << 6;
+					ledNumber(val - 40);
+				} else if (val >= 50 && val <= 53) {
+					updateFMifNecessary(30);
+					fmBase[30] = (val - 50) << 6;
+					ledNumber(val - 50);
 				}
 			} else if (number == 75) {
 				// Set glide

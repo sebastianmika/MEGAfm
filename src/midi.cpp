@@ -581,7 +581,7 @@ static void handleNoteOff(byte channel, byte note) {
 
 								for (int i = 0; i < 12; i++) {
 									ym.noteOff(i);
-									pedalOff[i] = 1;  // ToDo: not sure this is being used
+									pedalOff[i] = 1; // ToDo: not sure this is being used
 								}
 
 							} else {
@@ -886,41 +886,234 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				//	pedalUp();
 				// }
 			} else if (number == 70) {
-				// Set LFO shape, retrig, loop
-				//      	Square	InvSquare	Tri Saw		Random	RetrigOn	RetrigOff	LoopOn	LoopOf InvSaw
-				// Lfo1  	00		04			01	02		03      05			06			07		08		09
-				// Lfo2		10		14			11	12		13 		15			16			17		18		19
-				// Lfo3		20		24			21	22		23		25			26			27		28		29
-				byte selectedLfo = val / 10;
-				byte action = val % 10;
-				if (action == 0) {
-					invertedSquare[selectedLfo] = false;
-				} else if (action == 4) {
-					action = 0;
-					invertedSquare[selectedLfo] = true;
-				} else if (action == 3) {
-					invertedSaw[selectedLfo] = false;
-				} else if (action == 9) {
-					action = 2;
-					invertedSaw[selectedLfo] = true;
-				}
-				if (selectedLfo < 3) {
-					if (action <= 8) {
-						if (action <= 4) {
-							lfoShape[selectedLfo] = action;
-						} else if (action == 5) {
-							retrig[selectedLfo] = true;
-						} else if (action == 6) {
+				/*
+				                                Lfo1	Lfo2	Lfo3
+				    Square						00		16		32
+				    InvSquare					01
+				    Tri							02
+				    Saw							03
+				    InvSaw						04
+				    Random						05
+
+				    Retriger Off				06
+				    Retriger On					07
+				    Loop Off					08
+				    Loop On 					09
+
+				    Midi Sync Off				10
+				    Midi Sync On				11
+				    Midi X Off					12
+				    Midi X On					13
+
+				    unused						14
+				    unused						15		31		47
+				    -----------------------------------------------------
+				    Midi Thru Off				48
+				    Midi Thru On				49
+				    Param Pickup Off			50
+				    Param Pickup On				51
+				    Ch3 Modo					52
+				    Ch3 Duo						53
+
+				    MPE Off						54
+				    MPE On						55
+
+				    Arp Midi Sync Off			56
+				    Arp Midi Sync On			57
+
+				    Read Vol Off				58
+				    Read Vol On					59
+
+				    Note Prio Low				60
+				    Note Prio High				61
+				    Note Prio Last				62
+
+				    Fat Mode Range Semi			63
+				    Fat Mode Range Octave		64
+
+				    /////
+				    Led Brightness				65-75
+				*/
+				if (val <= 47) {
+					byte selectedLfo = val / 16;
+					byte action = val % 16;
+					switch (action) {
+						case 0:
+							// square
+							invertedSquare[selectedLfo] = false;
+							lfoShape[selectedLfo] = 0;
+							break;
+						case 1:
+							// inverted square
+							invertedSquare[selectedLfo] = true;
+							lfoShape[selectedLfo] = 0;
+							break;
+						case 2:
+							// triangle
+							lfoShape[selectedLfo] = 1;
+							break;
+						case 3:
+							// saw
+							invertedSaw[selectedLfo] = false;
+							lfoShape[selectedLfo] = 2;
+							break;
+						case 4:
+							// inverted saw
+							invertedSaw[selectedLfo] = true;
+							lfoShape[selectedLfo] = 2;
+							break;
+						case 5:
+							// random
+							lfoShape[selectedLfo] = 3;
+							break;
+						case 6:
+							// retrig off
 							retrig[selectedLfo] = false;
-						} else if (action == 7) {
-							looping[selectedLfo] = true;
-						} else if (action == 8) {
+							break;
+						case 7:
+							// retrig on
+							retrig[selectedLfo] = true;
+							break;
+						case 8:
+							// loop off
 							looping[selectedLfo] = false;
-						}
-						lfoLedOn();
-						showLfo();
+							break;
+						case 9:
+							// loop on
+							looping[selectedLfo] = true;
+							break;
+						case 10:
+							// midi sync off
+							lfoClockEnable[selectedLfo] = false;
+							break;
+						case 11:
+							// midi sync on
+							lfoClockEnable[selectedLfo] = true;
+							break;
+						case 12:
+							switch (selectedLfo) {
+								case 0:
+									// lfo 1 velocity midi off
+									lfoVel = false;
+									break;
+								case 1:
+									// lfo 2 mod wheel midi off
+									lfoMod = false;
+									break;
+								case 2:
+									// lfo 3 aftertouch midi off
+									lfoAt = false;
+									break;
+							}
+							digit(0, 0);
+							digit(1, 12);
+							lastLfoSetting[selectedLfo] = 0;
+							break;
+						case 13:
+							switch (selectedLfo) {
+								case 0:
+									// lfo 1 velocity midi on
+									lfoVel = true;
+									break;
+								case 1:
+									// lfo 2 mod wheel midi on
+									lfoMod = true;
+									break;
+								case 2:
+									// lfo 3 aftertouch midi on
+									lfoAt = true;
+									break;
+							}
+							digit(0, 0);
+							digit(1, 19);
+							lastLfoSetting[selectedLfo] = 1;
+							break;
+						case 14:
+						case 15:
+							// unused
+							break;
 					}
+					lfoLedOn();
+					showLfo();
+				} else {
+					switch (val) {
+						case 48:
+							thru = false;
+							setThru();
+							break;
+						case 49:
+							thru = true;
+							setThru();
+							break;
+						case 50:
+							pickupMode = false;
+							setPickupMode();
+							break;
+						case 51:
+							pickupMode = true;
+							setPickupMode();
+							break;
+						case 52:
+							stereoCh3 = false;
+							setStereoCh3();
+							break;
+						case 53:
+							stereoCh3 = true;
+							setStereoCh3();
+							break;
+						case 54:
+							mpe = false;
+							setMPEMode();
+							break;
+						case 55:
+							mpe = true;
+							setMPEMode();
+							break;
+						case 56:
+							arpClockEnable = false;
+							digit(0, 0);
+							digit(1, 12);
+							break;
+						case 57:
+							arpClockEnable = true;
+							digit(0, 0);
+							digit(1, 19);
+							break;
+						case 58:
+							ignoreVolume = false;
+							digit(0, 0);
+							digit(1, 12);
+							break;
+						case 59:
+							ignoreVolume = true;
+							digit(0, 0);
+							digit(1, 19);
+							break;
+						case 60:
+							notePriority = 0;
+							setNotePriority();
+							break;
+						case 61:
+							notePriority = 61;
+							setNotePriority();
+							break;
+						case 62:
+							notePriority = 2;
+							setNotePriority();
+							break;
+						case 63:
+							fatMode = FAT_MODE_SEMITONE;
+							digit(0, 1);
+							digit(1, 5);
+							break;
+						case 64:
+							fatMode = FAT_MODE_OCTAVE;
+							digit(0, 1);
+							digit(1, 27);
+							break;
+						}
 				}
+				finishSetup();
 			} else if ((number >= 71) && (number <= 73)) {
 				// Link LFO to target
 				// CC 71 = LFO1, CC72 = LFO2, CC73 = LFO3

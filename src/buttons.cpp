@@ -31,102 +31,172 @@ const byte presetChords[16][6] = {
 
 static bool resetFunction = false;
 
+void setThru() {
+	ledSet(13, thru);
+
+	digit(0, 26);
+	if (thru) {
+		digit(1, 1);
+	} else {
+		digit(1, 0);
+	}
+	delay(800);
+}
+
+void setPickupMode() {
+	ledSet(14, pickupMode);
+
+	if (pickupMode) {
+		digit(0, 14);
+		digit(1, 14);
+		delay(800);
+	} else {
+		digit(0, 19);
+		digit(1, 27);
+		delay(400);
+		digit(0, 14);
+		digit(1, 14);
+		delay(400);
+	}
+}
+
+void setStereoCh3() {
+	ledSet(15, stereoCh3);
+	EEPROM.update(3966, stereoCh3);
+	if (stereoCh3) {
+		digit(0, 5);
+		digit(1, 3);
+		delay(800);
+	} else {
+		digit(0, 15);
+		digit(1, 3);
+		delay(800);
+	}
+}
+
+void setNotePriority() {
+	switch (notePriority) {
+		case 0:
+			digit(0, 11);
+			digit(1, 27);
+			delay(800);
+			break; // LO
+		case 1:
+			digit(0, 23);
+			digit(1, 1);
+			delay(800);
+			break; // HI
+		case 2:
+			digit(0, 11);
+			digit(1, 17);
+			delay(800);
+			break; // LA
+	}
+}
+
+void setMPEMode() {
+	setupChanged = true;
+	if (mpe) {
+		digit(0, 17);
+		digit(1, 10);
+		delay(800);
+		EEPROM.write(3958, 48);
+		EEPROM.write(3959, 48);
+	} else {
+		digit(0, 1);
+		digit(1, 10);
+		delay(800);
+		EEPROM.write(3958, bendDown);
+		EEPROM.write(3959, bendUp);
+	}
+	EEPROM.write(3960, mpe);
+	ledSet(23, !mpe);
+}
+
+void finishSetup() {
+	byte temp;
+	ledSet(9, 0);
+	ledSet(13, 0);
+	ledSet(14, 0);
+	ledSet(15, 0);
+
+	if (arpMode) {
+		ledSet(23, 1);
+	} else {
+		ledSet(23, 0);
+	}
+
+	EEPROM.write(3967, notePriority);
+
+	temp = EEPROM.read(3950);
+	bitWrite(temp, 0, !thru);
+	bitWrite(temp, 1, ignoreVolume);
+	bitWrite(temp, 2, bitRead(noiseTableLength[0] - 2, 0));
+	bitWrite(temp, 3, bitRead(noiseTableLength[0] - 2, 1));
+	bitWrite(temp, 4, bitRead(noiseTableLength[1] - 2, 0));
+	bitWrite(temp, 5, bitRead(noiseTableLength[1] - 2, 1));
+	bitWrite(temp, 6, bitRead(noiseTableLength[2] - 2, 0));
+	bitWrite(temp, 7, bitRead(noiseTableLength[2] - 2, 1));
+	EEPROM.update(3950, temp);
+
+	bitWrite(temp, 0, fatSpreadMode);
+	EEPROM.write(3968, fatSpreadMode);
+
+	temp = 0;
+	bitWrite(temp, 0, lfoClockEnable[0]);
+	bitWrite(temp, 1, lfoClockEnable[1]);
+	bitWrite(temp, 2, lfoClockEnable[2]);
+	bitWrite(temp, 3, vibratoClockEnable);
+	bitWrite(temp, 4, arpClockEnable);
+	bitWrite(temp, 5, fatMode);
+	EEPROM.update(3953, temp);
+
+	if (pickupMode) {
+		EEPROM.update(3954, 1);
+	} else {
+		EEPROM.update(3954, 0);
+	}
+
+	EEPROM.update(3961, lfoVel);
+	EEPROM.update(3962, lfoMod);
+	EEPROM.update(3963, lfoAt);
+
+	showVoiceMode(voiceMode);
+
+	digit(0, 21);
+	digit(1, 21);
+}
+
 void buttChanged(Button number, bool value) {
 	if (millis() > 1000) {
 		if (setupMode) {
 			if (!value && millis() > 2000) {
-				byte temp;
-
 				switch (number) {
 					case kButtonChainLfo1:
 						thru = !thru;
-						ledSet(13, thru);
-
-						digit(0, 26);
-						if (thru) {
-							digit(1, 1);
-						} else {
-							digit(1, 0);
-						}
-						delay(800);
-
+						setThru();
 						break; // chain1
 
 					case kButtonChainLfo2:
 						pickupMode = !pickupMode;
-						ledSet(14, pickupMode);
-
-						if (pickupMode) {
-							digit(0, 14);
-							digit(1, 14);
-							delay(800);
-						} else {
-							digit(0, 19);
-							digit(1, 27);
-							delay(400);
-							digit(0, 14);
-							digit(1, 14);
-							delay(400);
-						}
+						setPickupMode();
 						break; // chain 2
 
 					case kButtonRetrig:
 						notePriority++;
 						if (notePriority > 2)
 							notePriority = 0;
-						switch (notePriority) {
-							case 0:
-								digit(0, 11);
-								digit(1, 27);
-								delay(800);
-								break; // LO
-							case 1:
-								digit(0, 23);
-								digit(1, 1);
-								delay(800);
-								break; // HI
-							case 2:
-								digit(0, 11);
-								digit(1, 17);
-								delay(800);
-								break; // LA
-						}
+						setNotePriority();
 						break; // retrig
 
 					case kButtonChainLfo3:
 						stereoCh3 = !stereoCh3;
-						ledSet(15, stereoCh3);
-						EEPROM.update(3966, stereoCh3);
-						if (stereoCh3) {
-							digit(0, 5);
-							digit(1, 3);
-							delay(800);
-						} else {
-							digit(0, 15);
-							digit(1, 3);
-							delay(800);
-						}
-
+						setStereoCh3();
 						break; // chain 3
 
 					case kButtonArpMode:
-						setupChanged = true;
 						mpe = !mpe;
-						if (mpe) {
-							digit(0, 17);
-							digit(1, 10);
-							delay(800);
-							EEPROM.write(3958, 48);
-							EEPROM.write(3959, 48);
-						} else {
-							digit(0, 1);
-							digit(1, 10);
-							delay(800);
-							EEPROM.write(3958, bendDown);
-							EEPROM.write(3959, bendUp);
-						}
-						EEPROM.write(3960, mpe);
-						ledSet(23, !mpe);
+						setMPEMode();
 						break; // MPE mode
 
 					case kButtonNoise:
@@ -142,57 +212,7 @@ void buttChanged(Button number, bool value) {
 						justQuitSetup = true;
 						// save setup values here
 
-						ledSet(9, 0);
-						ledSet(13, 0);
-						ledSet(14, 0);
-						ledSet(15, 0);
-
-						if (arpMode) {
-							ledSet(23, 1);
-						} else {
-							ledSet(23, 0);
-						}
-
-						EEPROM.write(3967, notePriority);
-
-						temp = EEPROM.read(3950);
-						bitWrite(temp, 0, !thru);
-						bitWrite(temp, 1, ignoreVolume);
-						bitWrite(temp, 2, bitRead(noiseTableLength[0] - 2, 0));
-						bitWrite(temp, 3, bitRead(noiseTableLength[0] - 2, 1));
-						bitWrite(temp, 4, bitRead(noiseTableLength[1] - 2, 0));
-						bitWrite(temp, 5, bitRead(noiseTableLength[1] - 2, 1));
-						bitWrite(temp, 6, bitRead(noiseTableLength[2] - 2, 0));
-						bitWrite(temp, 7, bitRead(noiseTableLength[2] - 2, 1));
-						EEPROM.update(3950, temp);
-
-						bitWrite(temp, 0, fatSpreadMode);
-						EEPROM.write(3968, fatSpreadMode);
-
-						temp = 0;
-						bitWrite(temp, 0, lfoClockEnable[0]);
-						bitWrite(temp, 1, lfoClockEnable[1]);
-						bitWrite(temp, 2, lfoClockEnable[2]);
-						bitWrite(temp, 3, vibratoClockEnable);
-						bitWrite(temp, 4, arpClockEnable);
-						bitWrite(temp, 5, fatMode);
-						EEPROM.update(3953, temp);
-
-						if (pickupMode) {
-							EEPROM.update(3954, 1);
-						} else {
-							EEPROM.update(3954, 0);
-						}
-
-						EEPROM.update(3961, lfoVel);
-						EEPROM.update(3962, lfoMod);
-						EEPROM.update(3963, lfoAt);
-
-						showVoiceMode(voiceMode);
-
-						digit(0, 21);
-						digit(1, 21);
-
+						finishSetup();
 						break;
 					default:
 						break;

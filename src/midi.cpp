@@ -588,13 +588,13 @@ static void handleNoteOff(byte channel, byte note) {
 								// NOT LAST KEY, CHANGE NOTE
 
 								switch (notePriority) {
-									case 0:
+									case NOTE_PRIORITY_LOWEST:
 										note = getLow();
 										break; // LOWEST
-									case 1:
+									case NOTE_PRIORITY_HIGHEST:
 										note = getHigh();
 										break; // HIGHEST
-									case 2:
+									case NOTE_PRIORITY_LAST:
 										note = getLast();
 										break; // LAST
 								}
@@ -1090,15 +1090,15 @@ void HandleControlChange(byte channel, byte number, byte val) {
 							digit(1, 19);
 							break;
 						case 60:
-							notePriority = 0;
+							notePriority = NOTE_PRIORITY_LOWEST;
 							setNotePriority();
 							break;
 						case 61:
-							notePriority = 61;
+							notePriority = NOTE_PRIORITY_HIGHEST;
 							setNotePriority();
 							break;
 						case 62:
-							notePriority = 2;
+							notePriority = NOTE_PRIORITY_LAST;
 							setNotePriority();
 							break;
 						case 63:

@@ -148,6 +148,9 @@ extern byte chordRoot;
 extern bool fatMode;
 constexpr bool FAT_MODE_SEMITONE = false;
 constexpr bool FAT_MODE_OCTAVE = true;
+constexpr byte NOTE_PRIORITY_LOWEST = 0;
+constexpr byte NOTE_PRIORITY_HIGHEST = 1;
+constexpr byte NOTE_PRIORITY_LAST = 2;
 
 extern int arpButtCounter;
 extern float finey;

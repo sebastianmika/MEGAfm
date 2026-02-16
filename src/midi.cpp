@@ -9,7 +9,7 @@
 #include "voice.h"
 #include "midi.h"
 #include "pots.h"
-#include "buttons.h"
+// #include "buttons.h"
 #include "midi_pedal.hpp"
 #include "FM.h"
 
@@ -629,6 +629,82 @@ void sendMidiButt(byte number, int value) {
 
 byte lastData1, lastData2;
 
+void setThru() {
+	byte temp = EEPROM.read(3950);
+	bitWrite(temp, 0, !thru);
+	EEPROM.update(3950, temp);
+}
+
+void setLFO1Clock() {
+	byte temp = EEPROM.read(3953);
+	bitWrite(temp, 0, lfoClockEnable[0]);
+	EEPROM.update(3953, temp);
+}
+
+void setLFO2Clock() {
+	byte temp = EEPROM.read(3953);
+	bitWrite(temp, 1, lfoClockEnable[1]);
+	EEPROM.update(3953, temp);
+}
+
+void setLFO3Clock() {
+	byte temp = EEPROM.read(3953);
+	bitWrite(temp, 2, lfoClockEnable[2]);
+	EEPROM.update(3953, temp);
+}
+
+void setVibratoClock() {
+	byte temp = EEPROM.read(3953);
+	bitWrite(temp, 3, vibratoClockEnable);
+	EEPROM.update(3953, temp);
+}
+
+void setArpClock() {
+	byte temp = EEPROM.read(3953);
+	bitWrite(temp, 4, arpClockEnable);
+	EEPROM.update(3953, temp);
+}
+
+void setLFO1Vel() {
+	EEPROM.update(3961, lfoVel);
+}
+
+void setLFO2Mod() {
+	EEPROM.update(3962, lfoMod);
+}
+
+void setLFO3Aftertouch() {
+	EEPROM.update(3963, lfoAt);
+}
+
+void setIgnoreVolume() {
+	byte temp = EEPROM.read(3950);
+	bitWrite(temp, 1, ignoreVolume);
+	EEPROM.update(3950, temp);
+}
+
+void setMPEMode() {
+	EEPROM.update(3960, mpe);
+}
+
+void setPickupMode() {
+	EEPROM.update(3954, pickupMode);
+}
+
+void setStereoCh3() {
+	EEPROM.update(3966, stereoCh3);
+}
+
+void setFatMode() {
+	byte temp = EEPROM.read(3953);
+	bitWrite(temp, 5, fatMode);
+	EEPROM.update(3953, temp);
+}
+
+void setNotePriority() {
+	EEPROM.write(3967, notePriority);
+}
+
 void HandleControlChange(byte channel, byte number, byte val) {
 	byte temp;
 	if (toolMode && channel == 16) {
@@ -639,9 +715,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else {
 					thru = 1;
 				}
-				temp = EEPROM.read(3950);
-				bitWrite(temp, 0, !thru);
-				EEPROM.update(3950, temp);
+				setThru();
 				break;
 			case 2:
 				if (val) {
@@ -649,20 +723,15 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else {
 					ignoreVolume = 0;
 				}
-				temp = EEPROM.read(3950);
-				bitWrite(temp, 1, ignoreVolume);
-				EEPROM.update(3950, temp);
+				setIgnoreVolume();
 				break;
-
 			case 3:
 				if (val) {
 					lfoClockEnable[0] = true;
 				} else {
 					lfoClockEnable[0] = false;
 				}
-				temp = EEPROM.read(3953);
-				bitWrite(temp, 0, lfoClockEnable[0]);
-				EEPROM.update(3953, temp);
+				setLFO1Clock();
 				break;
 			case 4:
 				if (val) {
@@ -670,9 +739,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else {
 					lfoClockEnable[1] = false;
 				}
-				temp = EEPROM.read(3953);
-				bitWrite(temp, 1, lfoClockEnable[1]);
-				EEPROM.update(3953, temp);
+				setLFO2Clock();
 				break;
 			case 5:
 				if (val) {
@@ -680,20 +747,15 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else {
 					lfoClockEnable[2] = false;
 				}
-				temp = EEPROM.read(3953);
-				bitWrite(temp, 2, lfoClockEnable[2]);
-				EEPROM.update(3953, temp);
+				setLFO3Clock();
 				break;
-
 			case 6:
 				if (val) {
 					vibratoClockEnable = true;
 				} else {
 					vibratoClockEnable = false;
 				}
-				temp = EEPROM.read(3953);
-				bitWrite(temp, 3, vibratoClockEnable);
-				EEPROM.update(3953, temp);
+				setVibratoClock();
 				break;
 			case 7:
 				if (val) {
@@ -701,24 +763,19 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else {
 					arpClockEnable = false;
 				}
-				temp = EEPROM.read(3953);
-				bitWrite(temp, 4, arpClockEnable);
-				EEPROM.update(3953, temp);
+				setArpClock();
 				break;
 			case 18:
 				mydisplay.setIntensity(0, constrain(val, 1, 15));
 				EEPROM.update(3965, constrain(val, 0, 15));
 				break;
-
 			case 19:
 				if (val) {
 					fatMode = true;
 				} else {
 					fatMode = false;
 				}
-				temp = EEPROM.read(3953);
-				bitWrite(temp, 5, fatMode);
-				EEPROM.update(3953, temp);
+				setFatMode();
 				break;
 
 			case 14:
@@ -738,7 +795,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else {
 					pickupMode = false;
 				}
-				EEPROM.update(3954, pickupMode);
+				setPickupMode();
 				break;
 			case 9:
 				if (val) {
@@ -746,7 +803,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else {
 					mpe = false;
 				}
-				EEPROM.update(3960, mpe);
+				setMPEMode();
 				break;
 			case 10:
 				if (val) {
@@ -754,7 +811,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else {
 					lfoVel = false;
 				}
-				EEPROM.update(3961, lfoVel);
+				setLFO1Vel();
 				break;
 			case 11:
 				if (val) {
@@ -762,7 +819,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else {
 					lfoMod = false;
 				}
-				EEPROM.update(3962, lfoMod);
+				setLFO2Mod();
 				break;
 			case 12:
 				if (val) {
@@ -770,7 +827,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else {
 					lfoAt = false;
 				}
-				EEPROM.update(3963, lfoAt);
+				setLFO3Aftertouch();
 				break;
 			case 13:
 				if (val) {
@@ -778,7 +835,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else {
 					stereoCh3 = false;
 				}
-				EEPROM.update(3966, stereoCh3);
+				setStereoCh3();
 				break;
 
 			case 15:
@@ -967,66 +1024,56 @@ void HandleControlChange(byte channel, byte number, byte val) {
 							lfoShape[selectedLfo] = 3;
 							break;
 						case 6:
-							// retrig off
-							retrig[selectedLfo] = false;
-							break;
 						case 7:
-							// retrig on
-							retrig[selectedLfo] = true;
+							// retrig on/off
+							retrig[selectedLfo] = (action == 7);
 							break;
 						case 8:
-							// loop off
-							looping[selectedLfo] = false;
-							break;
 						case 9:
-							// loop on
-							looping[selectedLfo] = true;
+							// loop on/off
+							looping[selectedLfo] = (action == 9);
 							break;
 						case 10:
-							// midi sync off
-							lfoClockEnable[selectedLfo] = false;
-							break;
 						case 11:
-							// midi sync on
-							lfoClockEnable[selectedLfo] = true;
-							break;
-						case 12:
+							// midi sync off
+							lfoClockEnable[selectedLfo] = (action == 11);
 							switch (selectedLfo) {
 								case 0:
-									// lfo 1 velocity midi off
-									lfoVel = false;
+									setLFO1Clock();
 									break;
 								case 1:
-									// lfo 2 mod wheel midi off
-									lfoMod = false;
+									setLFO2Clock();
 									break;
-								case 2:
-									// lfo 3 aftertouch midi off
-									lfoAt = false;
+								case 2: 
+									setLFO3Clock();
 									break;
 							}
-							digit(0, 0);
-							digit(1, 12);
-							lastLfoSetting[selectedLfo] = 0;
 							break;
+						case 12:
 						case 13:
 							switch (selectedLfo) {
 								case 0:
-									// lfo 1 velocity midi on
-									lfoVel = true;
+									// lfo 1 velocity midi off
+									lfoVel = (action == 13);
+									setLFO1Vel();
 									break;
 								case 1:
-									// lfo 2 mod wheel midi on
-									lfoMod = true;
+									// lfo 2 mod wheel midi off
+									lfoMod = (action == 13);
+									setLFO2Mod();
 									break;
 								case 2:
-									// lfo 3 aftertouch midi on
-									lfoAt = true;
+									// lfo 3 aftertouch midi off
+									lfoAt = (action == 13);
+									setLFO3Aftertouch();
 									break;
 							}
 							digit(0, 0);
-							digit(1, 19);
-							lastLfoSetting[selectedLfo] = 1;
+							if (action == 12)
+								digit(1, 12);
+							else
+								digit(1, 19);
+							lastLfoSetting[selectedLfo] = (action == 13);
 							break;
 						case 14:
 						case 15:
@@ -1038,56 +1085,43 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else {
 					switch (val) {
 						case 48:
-							thru = false;
-							setThru();
-							break;
 						case 49:
-							thru = true;
+							thru = (val == 49);
 							setThru();
 							break;
 						case 50:
-							pickupMode = false;
-							setPickupMode();
-							break;
 						case 51:
-							pickupMode = true;
+							pickupMode = (val == 51);
 							setPickupMode();
 							break;
 						case 52:
-							stereoCh3 = false;
-							setStereoCh3();
-							break;
 						case 53:
-							stereoCh3 = true;
+							stereoCh3 = (val == 53);
 							setStereoCh3();
 							break;
 						case 54:
-							mpe = false;
-							setMPEMode();
-							break;
 						case 55:
-							mpe = true;
+							mpe = (val == 55);
 							setMPEMode();
 							break;
 						case 56:
-							arpClockEnable = false;
-							digit(0, 0);
-							digit(1, 12);
-							break;
 						case 57:
-							arpClockEnable = true;
+							arpClockEnable = (val == 57);
+							setArpClock();
 							digit(0, 0);
-							digit(1, 19);
+							if (val == 56)
+								digit(1, 12);
+							else
+								digit(1, 19);
 							break;
 						case 58:
-							ignoreVolume = false;
-							digit(0, 0);
-							digit(1, 12);
-							break;
 						case 59:
-							ignoreVolume = true;
-							digit(0, 0);
-							digit(1, 19);
+							ignoreVolume = (val == 59);
+							setIgnoreVolume();
+							if (val == 58) 
+								digit(1, 12);
+							else
+								digit(1, 19);
 							break;
 						case 60:
 							notePriority = NOTE_PRIORITY_LOWEST;
@@ -1102,18 +1136,20 @@ void HandleControlChange(byte channel, byte number, byte val) {
 							setNotePriority();
 							break;
 						case 63:
-							fatMode = FAT_MODE_SEMITONE;
-							digit(0, 1);
-							digit(1, 5);
-							break;
 						case 64:
-							fatMode = FAT_MODE_OCTAVE;
+							if (val == 63)
+								fatMode = FAT_MODE_SEMITONE;
+							else
+								fatMode = FAT_MODE_OCTAVE;
+							setFatMode();
 							digit(0, 1);
-							digit(1, 27);
+							if (val == 63)
+								digit(1, 5);
+							else
+								digit(1, 27);
 							break;
 						}
 				}
-				finishSetup();
 			} else if ((number >= 71) && (number <= 73)) {
 				// Link LFO to target
 				// CC 71 = LFO1, CC72 = LFO2, CC73 = LFO3

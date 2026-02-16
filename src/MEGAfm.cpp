@@ -37,7 +37,7 @@ byte finePot;
 bool chord;
 // 0=chip1 down chip2 up 1=both chips go up and down (mixed)
 bool fatSpreadMode;
-// animate the pickup funciton with dots that move up or down
+// animate the pickup function with dots that move up or down
 int pickupFrame;
 bool pickupIsFader;
 bool pickupFrameUp;
@@ -88,7 +88,7 @@ bool flasher;
 int flashCounter, flashCounter2, bankCounter;
 bool toolMode;
 /**
- * When set to true, megaFM boots in test mode (hold reset sat startup
+ * When set to true, megaFM boots in test mode (hold reset at startup
  * to enter test mode after a factory reset) : (plays some chords at
  * various volumes and fires a note on every channel in a loop). This
  * is used for me to check that the chips and volume control circuits

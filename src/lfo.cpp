@@ -19,22 +19,11 @@ void applyLfo() {
 	// APPLY
 	for (int i = 0; i < 51; i++) {
 		// IF the number is linked to either lfo grab base
-		if ((linked[0][i]) || (linked[1][i]) || (linked[2][i])) {
-			fmData[i] = fmBase[i];
-
-			// add lfo accordingly
-			if (linked[0][i]) {
-				fmData[i] += lfoCalculated[0];
+		fmData[i] = fmBase[i];
+		for (int j = 0; j < 3; j++) {
+			if (linked[j][i]) {
+				fmData[i] += lfoCalculated[j];
 			}
-			if (linked[1][i]) {
-				fmData[i] += lfoCalculated[1];
-			}
-			if (linked[2][i]) {
-				fmData[i] += lfoCalculated[2];
-			}
-
-		} else {
-			fmData[i] = fmBase[i];
 		}
 		fmData[i] = constrain(fmData[i], 0, 255);
 	}

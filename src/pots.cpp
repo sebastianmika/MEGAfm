@@ -34,6 +34,8 @@ void movedPot(byte number, byte data, bool isMidi) {
 							digit(0, 0);
 							digit(1, 12);
 						}
+						if (!isMidi)
+							sendCC(70, 56 + arpClockEnable);
 						break; // arp rate
 					case 15:
 						setupChanged = true;
@@ -46,6 +48,8 @@ void movedPot(byte number, byte data, bool isMidi) {
 							digit(0, 0);
 							digit(1, 12);
 						}
+						if (!isMidi)
+							sendCC(70, 10 + lfoClockEnable[0]);
 						break; // lfo 1 rate
 					case 10:
 						setupChanged = true;
@@ -58,6 +62,8 @@ void movedPot(byte number, byte data, bool isMidi) {
 							digit(0, 0);
 							digit(1, 12);
 						}
+						if (!isMidi)
+							sendCC(70, 10 + 16 + lfoClockEnable[1]);
 						break; // lfo 2 rate
 					case 14:
 						setupChanged = true;
@@ -70,6 +76,8 @@ void movedPot(byte number, byte data, bool isMidi) {
 							digit(0, 0);
 							digit(1, 12);
 						}
+						if (!isMidi)
+							sendCC(70, 10 + 32 + lfoClockEnable[2]);
 						break; // lfo 3 rate
 					case 48:
 						setupChanged = true;
@@ -83,6 +91,8 @@ void movedPot(byte number, byte data, bool isMidi) {
 							digit(0, 0);
 							digit(1, 12);
 						}
+						if (!isMidi)
+							sendCC(70, 65 + vibratoClockEnable);
 						break; // vib rate
 
 					case 12:
@@ -109,6 +119,8 @@ void movedPot(byte number, byte data, bool isMidi) {
 								digit(1, 12);
 							}
 						}
+						if (!isMidi)
+							sendCC(70, 12 + lfoVel);
 						break; // lfo 1 depth
 
 					case 9:
@@ -135,6 +147,8 @@ void movedPot(byte number, byte data, bool isMidi) {
 								digit(1, 12);
 							}
 						}
+						if (!isMidi)
+							sendCC(70, 28 + lfoMod);
 						break; // lfo 2 depth
 
 					case 2:
@@ -161,6 +175,8 @@ void movedPot(byte number, byte data, bool isMidi) {
 								digit(1, 12);
 							}
 						}
+						if (!isMidi)
+							sendCC(70, 44 + lfoAt);
 						break; // lfo 3 depth
 
 					case 28:
@@ -174,6 +190,8 @@ void movedPot(byte number, byte data, bool isMidi) {
 							digit(0, 1);
 							digit(1, 27);
 						}
+						if (!isMidi)
+							sendCC(70, 63 + fatMode);
 						break; // fat
 
 					case 1:
@@ -187,6 +205,8 @@ void movedPot(byte number, byte data, bool isMidi) {
 							digit(0, 0);
 							digit(1, 12);
 						}
+						if (!isMidi)
+							sendCC(70, 58 + ignoreVolume);
 						break; // volume preset
 
 					case 13:
@@ -195,6 +215,8 @@ void movedPot(byte number, byte data, bool isMidi) {
 							brightness = 10;                   // default;
 						mydisplay.setIntensity(0, brightness); // 15 = brightest
 						EEPROM.write(3965, brightness);
+						if (!isMidi)
+							sendCC(70, 69 + brightness);
 						break;
 				}
 
@@ -217,6 +239,9 @@ void movedPot(byte number, byte data, bool isMidi) {
 								updateFMifNecessary(3);
 								fmBase[3] = data;
 								ledNumber(data >> 6);
+								if (!isMidi) {
+									sendCC(74, 20 + (data >> 6));
+								}
 							} else {
 								fmBase[0] = data;
 								updateFMifNecessary(0);
@@ -225,12 +250,13 @@ void movedPot(byte number, byte data, bool isMidi) {
 								} else {
 									ledNumber(-3 + (data >> 5));
 								}
+								if (!isMidi) {
+									isFader = true;
+									targetPot = 0;
+									sendCC(number, data >> 1);
+								}
 							}
-							if (!isMidi) {
-								isFader = true;
-								targetPot = 0;
-								sendCC(number, data >> 1);
-							}
+
 							break; // detune
 						case 27:
 							showPickupAnimation = false;
@@ -318,6 +344,9 @@ void movedPot(byte number, byte data, bool isMidi) {
 								updateFMifNecessary(12);
 								fmBase[12] = data;
 								ledNumber(data >> 6);
+								if (!isMidi) {
+									sendCC(74, 30 + (data >> 6));
+								}
 							} else {
 								fmBase[18] = data;
 								updateFMifNecessary(18);
@@ -326,11 +355,11 @@ void movedPot(byte number, byte data, bool isMidi) {
 								} else {
 									ledNumber(-3 + (data >> 5));
 								}
-							}
-							if (!isMidi) {
-								isFader = true;
-								targetPot = 18;
-								sendCC(number, data >> 1);
+								if (!isMidi) {
+									isFader = true;
+									targetPot = 18;
+									sendCC(number, data >> 1);
+								}
 							}
 							break; // detune
 						case 32:
@@ -420,6 +449,9 @@ void movedPot(byte number, byte data, bool isMidi) {
 								updateFMifNecessary(21);
 								fmBase[21] = data;
 								ledNumber(data >> 6);
+								if (!isMidi) {
+									sendCC(74, 40 + (data >> 6));
+								}
 							} else {
 								fmBase[9] = data;
 								updateFMifNecessary(9);
@@ -428,11 +460,11 @@ void movedPot(byte number, byte data, bool isMidi) {
 								} else {
 									ledNumber(-3 + (data >> 5));
 								}
-							}
-							if (!isMidi) {
-								isFader = true;
-								targetPot = 9;
-								sendCC(number, data >> 1);
+								if (!isMidi) {
+									isFader = true;
+									targetPot = 9;
+									sendCC(number, data >> 1);
+								}
 							}
 							break; // detune
 						case 24:
@@ -521,6 +553,9 @@ void movedPot(byte number, byte data, bool isMidi) {
 								updateFMifNecessary(30);
 								fmBase[30] = data;
 								ledNumber(data >> 6);
+								if (!isMidi) {
+									sendCC(74, 50 + (data >> 6));
+								}
 							} else {
 								fmBase[27] = data;
 								updateFMifNecessary(27);
@@ -529,11 +564,11 @@ void movedPot(byte number, byte data, bool isMidi) {
 								} else {
 									ledNumber(-3 + (data >> 5));
 								}
-							}
-							if (!isMidi) {
-								isFader = true;
-								targetPot = 27;
-								sendCC(number, data >> 1);
+								if (!isMidi) {
+									isFader = true;
+									targetPot = 27;
+									sendCC(number, data >> 1);
+								}
 							}
 							break; // detune
 						case 39:
@@ -628,7 +663,8 @@ void movedPot(byte number, byte data, bool isMidi) {
 								} else if (fine < 128) {
 									ledNumber(map(fine, 128, 0, 0, 32));
 								}
-
+								if (!isMidi)
+									sendCC(76, data >> 1);
 							} else {
 
 								vol = 128 - (data >> 1);
@@ -685,6 +721,8 @@ void movedPot(byte number, byte data, bool isMidi) {
 									updateGlideIncrements();
 									fineChanged = true;
 									ledNumber(data >> 2);
+									if (!isMidi)
+										sendCC(75, data >> 1);
 								} else {
 									fmBase[50] = data;
 									updateFMifNecessary(50);
@@ -836,6 +874,9 @@ void movedPot(byte number, byte data, bool isMidi) {
 							break; /// arp rate
 						case 5:
 							showPickupAnimation = false;
+							// This looks wrong; in midi.cpp we already do data << 1 before coming here; this makes this
+							// go up to 16384; Now, if this is NOT midi data but pot - which seems to go 0-255 looking
+							// at the midi sending of data >> 1 - there is a mismatch.
 							if (isMidi) {
 								data = data << 6;
 							}

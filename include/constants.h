@@ -17,6 +17,18 @@ const int16_t kMidiArpTicks[] = {384, 192, 96, 48, 32, 24, 12, 8, 6, 3, 2}; // a
 const float kLfoClockRates[] = {0.6640625, 1.328125, 2.65625, 5.3125, 7.96875, 10.625, 21.25, 31.875, 42.5, 85, 127.5};
 const uint16_t kBankOffsets[] = {0, 7900, 15800, 23700, 31600, 39500};
 
+enum ArpMode {
+    kArpOff = 0,
+    kArpUp = 1,
+    kArpDown = 2,
+    kArpUpDown = 3,
+    kArpRandom1 = 4,
+    kArpRandom2 = 5,
+    kArpSequence1 = 6,
+    kArpSequence2 = 7
+};
+const int kArpModeCount = 8;
+
 enum VoiceMode {
 	kVoicingPoly12 = 0,
 	kVoicingWide6 = 1,

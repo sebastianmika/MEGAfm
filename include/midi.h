@@ -22,5 +22,6 @@ void sendNoteOff(byte note, byte velocity, byte channel);
 void sendTool(byte note, byte velocity);
 void sendNoteOn(byte note, byte velocity, byte channel);
 void midiRead();
+void initFirstCC();
 
 #endif // MEGAFM_CMAKE_MIDI_H

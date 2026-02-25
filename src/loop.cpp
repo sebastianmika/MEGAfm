@@ -218,7 +218,8 @@ void loop() {
 
 		if (arpButtCounter > 3999) {
 			arpButtCounter = 0;
-			arpMode = 0;
+			arpMode = kArpOff;
+			sendCC(70, 85 + arpMode);
 			resetVoices();
 
 			ledSet(23, 0);

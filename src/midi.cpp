@@ -9,7 +9,7 @@
 #include "voice.h"
 #include "midi.h"
 #include "pots.h"
-// #include "buttons.h"
+#include "buttons.h"
 #include "midi_pedal.hpp"
 #include "FM.h"
 
@@ -18,12 +18,19 @@ static bool ch3Alt;
 static const float vibIncrements[8] = {5.312, 7.968, 10.625, 14.166, 15.937, 31.875, 42.5, 63.75};
 static float vibIndexF;
 
-static byte lastCC[60];
+static bool firstCC[80];
+static byte lastCC[80];
 
 static int arpClockCounter;
 static byte syncLfoCounter;
 
 static bool arpClearFlag = false;
+
+void initFirstCC() {
+	for (int i = 0; i < 80; i++) {
+		firstCC[i] = true;
+	}
+}
 
 void handleAftertouch(byte channel, byte val) {
 	leftDot();
@@ -321,10 +328,10 @@ static void handleNoteOn(byte channel, byte note, byte velocity) {
 					}
 
 					// Reset Arpeggiator
-					if (arpMode == 6) {
+					if (arpMode == kArpSequence1) {
 						arpStep = seqStep = 0;
 						arpIndex = 0;
-					} else if (arpMode == 7) {
+					} else if (arpMode == kArpSequence2) {
 						arpCounter = 1023;
 					} // next manual arp step
 
@@ -613,9 +620,12 @@ static void handleNoteOff(byte channel, byte note) {
 	}
 }
 
+void sendCCForce(byte number, int value) { sendControlChange(number, value, masterChannelOut); }
+
 void sendCC(byte number, int value) {
 
-	if (lastCC[number] != value) {
+	if (firstCC[number] || (lastCC[number] != value)) {
+		firstCC[number] = false;
 		lastCC[number] = value;
 		rightDot();
 		sendControlChange(number, value, masterChannelOut);
@@ -665,17 +675,17 @@ void setArpClock() {
 	EEPROM.update(3953, temp);
 }
 
-void setLFO1Vel() {
-	EEPROM.update(3961, lfoVel);
+void setFatSpreadMode() {
+	byte temp = EEPROM.read(3968);
+	bitWrite(temp, 0, fatSpreadMode);
+	EEPROM.write(3968, fatSpreadMode);
 }
 
-void setLFO2Mod() {
-	EEPROM.update(3962, lfoMod);
-}
+void setLFO1Vel() { EEPROM.update(3961, lfoVel); }
 
-void setLFO3Aftertouch() {
-	EEPROM.update(3963, lfoAt);
-}
+void setLFO2Mod() { EEPROM.update(3962, lfoMod); }
+
+void setLFO3Aftertouch() { EEPROM.update(3963, lfoAt); }
 
 void setIgnoreVolume() {
 	byte temp = EEPROM.read(3950);
@@ -683,17 +693,11 @@ void setIgnoreVolume() {
 	EEPROM.update(3950, temp);
 }
 
-void setMPEMode() {
-	EEPROM.update(3960, mpe);
-}
+void setMPEMode() { EEPROM.update(3960, mpe); }
 
-void setPickupMode() {
-	EEPROM.update(3954, pickupMode);
-}
+void setPickupMode() { EEPROM.update(3954, pickupMode); }
 
-void setStereoCh3() {
-	EEPROM.update(3966, stereoCh3);
-}
+void setStereoCh3() { EEPROM.update(3966, stereoCh3); }
 
 void setFatMode() {
 	byte temp = EEPROM.read(3953);
@@ -701,8 +705,18 @@ void setFatMode() {
 	EEPROM.update(3953, temp);
 }
 
-void setNotePriority() {
-	EEPROM.write(3967, notePriority);
+void setNotePriority() { EEPROM.write(3967, notePriority); }
+
+void setBrightness(byte brightness) {
+	mydisplay.setIntensity(0, brightness); // 15 = brightest
+	EEPROM.write(3965, brightness);
+}
+
+void showOnOff(bool on) {
+	if (on)
+		digit(1, 19);
+	else
+		digit(1, 12);
 }
 
 void HandleControlChange(byte channel, byte number, byte val) {
@@ -933,6 +947,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				}
 			} else if (number == 7) {
 				if (kAllCC) {
+					// Volume - scale to 0-255
 					movedPot(1, val << 1, 1);
 				}
 			} else if (number == 64) {
@@ -946,23 +961,23 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				/*
 				                                Lfo1	Lfo2	Lfo3
 				    Square						00		16		32
-				    InvSquare					01
-				    Tri							02
-				    Saw							03
-				    InvSaw						04
-				    Random						05
+				    InvSquare					01		17		33
+				    Tri							02		18		34
+				    Saw							03		19		35
+				    InvSaw						04		20		36
+				    Random						05		21		37
 
-				    Retriger Off				06
-				    Retriger On					07
-				    Loop Off					08
-				    Loop On 					09
+				    Retriger Off				06		22		38
+				    Retriger On					07		23		39
+				    Loop Off					08		24		40
+				    Loop On 					09		25		41
 
-				    Midi Sync Off				10
-				    Midi Sync On				11
-				    Midi X Off					12
-				    Midi X On					13
+				    Midi Sync Off				10		26		42
+				    Midi Sync On				11		27		43
+				    Midi X Off					12		28		44
+				    Midi X On					13		29		45
 
-				    unused						14
+				    unused						14		30		46
 				    unused						15		31		47
 				    -----------------------------------------------------
 				    Midi Thru Off				48
@@ -988,8 +1003,15 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				    Fat Mode Range Semi			63
 				    Fat Mode Range Octave		64
 
-				    /////
-				    Led Brightness				65-75
+				    Vibrato Midi Sync Off		65
+				    Vibrato Midi Sync On		66
+
+				    Fat Spread Mode Up/Down		67
+				    Fat Spread Mode Up/Up		68
+
+				    LED Brightness				69 - 84
+
+				    Arp Mode 0-7				85 - 92 (off, up, down, up/down, rnd1, rnd2, seq1, seq2)
 				*/
 				if (val <= 47) {
 					byte selectedLfo = val / 16;
@@ -1044,10 +1066,11 @@ void HandleControlChange(byte channel, byte number, byte val) {
 								case 1:
 									setLFO2Clock();
 									break;
-								case 2: 
+								case 2:
 									setLFO3Clock();
 									break;
 							}
+							showOnOff(action == 11);
 							break;
 						case 12:
 						case 13:
@@ -1068,11 +1091,8 @@ void HandleControlChange(byte channel, byte number, byte val) {
 									setLFO3Aftertouch();
 									break;
 							}
-							digit(0, 0);
-							if (action == 12)
-								digit(1, 12);
-							else
-								digit(1, 19);
+							// digit(0, 0);
+							showOnOff(action == 13);
 							lastLfoSetting[selectedLfo] = (action == 13);
 							break;
 						case 14:
@@ -1082,46 +1102,49 @@ void HandleControlChange(byte channel, byte number, byte val) {
 					}
 					lfoLedOn();
 					showLfo();
+				} else if ((val >= 69) && (val <= 84)) {
+					setBrightness(val - 69);
+				} else if ((val >= 85) && (val <= 92)) {
+					arpMode = ArpMode(val - 85);
+					showArpMode();
+					resetVoices();
 				} else {
 					switch (val) {
 						case 48:
 						case 49:
 							thru = (val == 49);
 							setThru();
+							showOnOff(val == 49);
 							break;
 						case 50:
 						case 51:
 							pickupMode = (val == 51);
 							setPickupMode();
+							showOnOff(val == 51);
 							break;
 						case 52:
 						case 53:
 							stereoCh3 = (val == 53);
 							setStereoCh3();
+							showOnOff(val == 53);
 							break;
 						case 54:
 						case 55:
 							mpe = (val == 55);
 							setMPEMode();
+							showOnOff(val == 55);
 							break;
 						case 56:
 						case 57:
 							arpClockEnable = (val == 57);
 							setArpClock();
-							digit(0, 0);
-							if (val == 56)
-								digit(1, 12);
-							else
-								digit(1, 19);
+							showOnOff(val == 57);
 							break;
 						case 58:
 						case 59:
 							ignoreVolume = (val == 59);
 							setIgnoreVolume();
-							if (val == 58) 
-								digit(1, 12);
-							else
-								digit(1, 19);
+							showOnOff(val == 59);
 							break;
 						case 60:
 							notePriority = NOTE_PRIORITY_LOWEST;
@@ -1148,7 +1171,19 @@ void HandleControlChange(byte channel, byte number, byte val) {
 							else
 								digit(1, 27);
 							break;
-						}
+						case 65:
+						case 66:
+							vibratoClockEnable = (val == 66);
+							setVibratoClock();
+							showOnOff(val == 66);
+							break;
+						case 67:
+						case 68:
+							fatSpreadMode = (val == 68);
+							setFatSpreadMode();
+							showOnOff(val == 68);
+							break;
+					}
 				}
 			} else if ((number >= 71) && (number <= 73)) {
 				// Link LFO to target
@@ -1190,23 +1225,22 @@ void HandleControlChange(byte channel, byte number, byte val) {
 					octOffset = val - 10;
 					ledNumber(octOffset);
 				} else if (val >= 20 && val <= 23) {
-					// Set rate scaling for operators 1-4
-					// op1 = 3
-					// op2 = 12
-					// op3 = 21
-					// op4 = 30
+					// Set rate scaling for operators 1
 					updateFMifNecessary(3);
 					fmBase[3] = (val - 20) << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
 					ledNumber(val - 20);
 				} else if (val >= 30 && val <= 33) {
+					// Set rate scaling for operators 2
 					updateFMifNecessary(12);
 					fmBase[12] = (val - 30) << 6;
 					ledNumber(val - 30);
 				} else if (val >= 40 && val <= 43) {
+					// Set rate scaling for operators 3
 					updateFMifNecessary(21);
 					fmBase[21] = (val - 40) << 6;
 					ledNumber(val - 40);
 				} else if (val >= 50 && val <= 53) {
+					// Set rate scaling for operators 4
 					updateFMifNecessary(30);
 					fmBase[30] = (val - 50) << 6;
 					ledNumber(val - 50);
@@ -1247,154 +1281,206 @@ void midiOut(byte note) {
 }
 
 void dumpPreset() {
+
 	for (int number = 0; number < 58; number++) {
 		switch (number) {
 			// OP1
 			case 18:
-				sendCC(number, fmBase[0] >> 1);
+				sendCCForce(number, fmBase[0] >> 1);
 				break; // detune
 			case 27:
-				sendCC(number, fmBase[1] >> 1);
+				sendCCForce(number, fmBase[1] >> 1);
 				break; // multiple
 			case 19:
-				sendCC(number, fmBase[2] >> 1);
+				sendCCForce(number, fmBase[2] >> 1);
 				break; // op level
 			case 29:
-				sendCC(number, fmBase[4] >> 1);
+				sendCCForce(number, fmBase[4] >> 1);
 				break; // attack
 			case 21:
-				sendCC(number, fmBase[5] >> 1);
+				sendCCForce(number, fmBase[5] >> 1);
 				break; // decay1
 			case 25:
-				sendCC(number, fmBase[7] >> 1);
+				sendCCForce(number, fmBase[7] >> 1);
 				break; // sustain
 			case 17:
-				sendCC(number, fmBase[6] >> 1);
+				sendCCForce(number, fmBase[6] >> 1);
 				break; // sustain rate
 			case 30:
-				sendCC(number, fmBase[8] >> 1);
+				sendCCForce(number, fmBase[8] >> 1);
 				break; // release
 			// OP2
 			case 31:
-				sendCC(number, fmBase[18] >> 1);
+				sendCCForce(number, fmBase[18] >> 1);
 				break; // detune
 			case 32:
-				sendCC(number, fmBase[19] >> 1);
+				sendCCForce(number, fmBase[19] >> 1);
 				break; // multiple
 			case 40:
-				sendCC(number, fmBase[20] >> 1);
+				sendCCForce(number, fmBase[20] >> 1);
 				break; // op level
 			case 36:
-				sendCC(number, fmBase[22] >> 1);
+				sendCCForce(number, fmBase[22] >> 1);
 				break; // attack
 			case 44:
-				sendCC(number, fmBase[23] >> 1);
+				sendCCForce(number, fmBase[23] >> 1);
 				break; // decay1
 			case 42:
-				sendCC(number, fmBase[25] >> 1);
+				sendCCForce(number, fmBase[25] >> 1);
 				break; // sustain
 			case 34:
-				sendCC(number, fmBase[24] >> 1);
+				sendCCForce(number, fmBase[24] >> 1);
 				break; // sustain rate
 			case 11:
-				sendCC(number, fmBase[26] >> 1);
+				sendCCForce(number, fmBase[26] >> 1);
 				break; // release
 			// OP3
 			case 20:
-				sendCC(number, fmBase[9] >> 1);
+				sendCCForce(number, fmBase[9] >> 1);
 				break; // detune
 			case 24:
-				sendCC(number, fmBase[10] >> 1);
+				sendCCForce(number, fmBase[10] >> 1);
 				break; // multiple
 			case 16:
-				sendCC(number, fmBase[11] >> 1);
+				sendCCForce(number, fmBase[11] >> 1);
 				break; // op level
 			case 8:
-				sendCC(49, fmBase[13] >> 1);
+				sendCCForce(49, fmBase[13] >> 1);
 				break; // attack
 			case 0:
-				sendCC(50, fmBase[14] >> 1);
+				sendCCForce(50, fmBase[14] >> 1);
 				break; // decay1
 			case 7:
-				sendCC(51, fmBase[16] >> 1);
+				sendCCForce(51, fmBase[16] >> 1);
 				break; // sustain
 			case 45:
-				sendCC(number, fmBase[15] >> 1);
+				sendCCForce(number, fmBase[15] >> 1);
 				break; // sustain rate
 			case 37:
-				sendCC(number, fmBase[17] >> 1);
+				sendCCForce(number, fmBase[17] >> 1);
 				break; // release
 			// OP4
 			case 47:
-				sendCC(number, fmBase[27] >> 1);
+				sendCCForce(number, fmBase[27] >> 1);
 				break; // detune
 			case 39:
-				sendCC(number, fmBase[28] >> 1);
+				sendCCForce(number, fmBase[28] >> 1);
 				break; // multiple
 			case 38:
-				sendCC(number, fmBase[29] >> 1);
+				sendCCForce(number, fmBase[29] >> 1);
 				break; // op level
 			case 46:
-				sendCC(number, fmBase[31] >> 1);
+				sendCCForce(number, fmBase[31] >> 1);
 				break; // attack
 			case 33:
-				sendCC(number, fmBase[32] >> 1);
+				sendCCForce(number, fmBase[32] >> 1);
 				break; // decay1
 			case 41:
-				sendCC(number, fmBase[34] >> 1);
+				sendCCForce(number, fmBase[34] >> 1);
 				break; // sustain
 			case 43:
-				sendCC(number, fmBase[33] >> 1);
+				sendCCForce(number, fmBase[33] >> 1);
 				break; // sustain rate
 			case 35:
-				sendCC(number, fmBase[35] >> 1);
+				sendCCForce(number, fmBase[35] >> 1);
 				break; // release
 
 			case 1:
-				sendCC(7, vol >> 1);
-				break; // volume //SEND FINE!!!!!!!!!!!!
+				sendCCForce(7, 128 - lastVol);
+				break; // volume
 			case 4:
-				sendCC(number, (1 + (fmBase[42] >> 5)));
+				sendCCForce(number, (1 + (fmBase[42] >> 5)));
 				break; // algo
 			case 3:
-				sendCC(number, fmBase[43] >> 1);
+				sendCCForce(number, fmBase[43] >> 1);
 				break; // feedback
 			case 28:
-				sendCC(number, fmBase[50] >> 1);
-				break; // fat 1-127 // SEND GLIDE!!!!!!!!!!!!
+				sendCCForce(number, fmBase[50] >> 1);
+				break; // fat 1-127
 			case 15:
-				sendCC(number, fmBase[36] >> 1);
+				sendCCForce(number, fmBase[36] >> 1);
 				break; // lfo 1 rate
 			case 12:
-				sendCC(number, fmBase[37] >> 1);
+				sendCCForce(number, fmBase[37] >> 1);
 				break; // lfo 1 depth
 			case 10:
-				sendCC(number, fmBase[38] >> 1);
+				sendCCForce(number, fmBase[38] >> 1);
 				break; // lfo 2 rate
 			case 9:
-				sendCC(number, fmBase[39] >> 1);
+				sendCCForce(number, fmBase[39] >> 1);
 				break; // lfo 2 depth
 			case 14:
-				sendCC(number, fmBase[40] >> 1);
+				sendCCForce(number, fmBase[40] >> 1);
 				break; // lfo 3 rate
 			case 2:
-				sendCC(number, fmBase[41] >> 1);
+				sendCCForce(number, fmBase[41] >> 1);
 				break; // lfo 3 depth
 			case 6:
-				sendCC(number, fmBase[46] >> 1);
+				sendCCForce(number, fmBase[46] >> 1);
 				break; /// arp rate
 			case 5:
-				sendCC(number, fmBase[47] >> 1);
+				sendCCForce(number, fmBase[47] >> 1);
 				break; // arp range
 			case 48:
-				sendCC(number, fmBase[48] >> 1);
+				sendCCForce(number, fmBase[48] >> 1);
 				break; // vibrato rate WAS 7
 			case 13:
-				sendCC(number, fmBase[49] >> 1);
+				sendCCForce(number, fmBase[49] >> 1);
 				break; // vibrato depth
 		}
 	}
+	// send other settings
+	sendCCForce(74, 20 + (fmBase[3] >> 6));   // op1 rate scaling
+	sendCCForce(74, 30 + (fmBase[12] >> 6));  // op2 rate scaling
+	sendCCForce(74, 40 + (fmBase[21] >> 6));  // op3 rate scaling
+	sendCCForce(74, 50 + (fmBase[30] >> 6));  // op4 rate scaling
+	sendCCForce(70, 56 + arpClockEnable);     // arp clock on/off
+	sendCCForce(70, 65 + vibratoClockEnable); // vibrato clock on/off
+	sendCCForce(74, 85 + arpMode);
+
+	for (int i = 0; i < 3; i++) {
+		byte shape = lfoShape[i];
+		byte val = 0;
+		if ((shape == 0))
+			val = invertedSquare[i];
+		else if (shape == 1)
+			val = 2;
+		else if (shape == 2)
+			val = 3 + invertedSaw[i];
+		else if (shape == 3)
+			val = 5;
+		sendCCForce(70, val + 16 * i);
+		sendCCForce(70, 8 + looping[i] + 16 * i);
+		sendCCForce(70, 6 + retrig[i] + 16 * i);
+		sendCCForce(70, 10 + 16 * i + lfoClockEnable[i]);
+
+		for (int targetPot = 0; targetPot < 51; targetPot++)
+			// skip unused pots
+			if ((targetPot != 3) && (targetPot != 12) && (targetPot != 21) && (targetPot != 23) && (targetPot != 30) &&
+			    (targetPot != 45))
+				sendCCForce(71 + i, 2 * targetPot + linked[i][targetPot]);
+	}
+
+	sendCCForce(70, 12 + lfoVel);
+	sendCCForce(70, 28 + lfoMod);
+	sendCCForce(70, 44 + lfoAt);
+	sendCCForce(70, 63 + fatMode);
+	sendCCForce(70, 58 + (1 - ignoreVolume));
+	sendCCForce(70, 69 + EEPROM.read(3965)); // brightness
+
+	sendCCForce(74, voiceMode);
+	sendCCForce(74, 10 + octOffset);
+	sendCCForce(75, glide << 3); // Todo: check
+	sendCCForce(76, fine >> 1);
+
+	sendCCForce(70, 48 + thru);          // midi thru on/off
+	sendCCForce(70, 50 + pickupMode);    // pickup mode on/off
+	sendCCForce(70, 60 + notePriority);  // note priority
+	sendCCForce(70, 52 + stereoCh3);     // stereo ch3 on/off
+	sendCCForce(70, 54 + mpe);           // mpe mode on/off
+	sendCCForce(70, 67 + fatSpreadMode); // fat spread mode up/down or up/up
 }
+
 static byte mStatus;
 static byte mData;
 static byte mChannel;
@@ -1412,7 +1498,6 @@ void sendControlChange(byte number, byte value, byte channel) {
 
 void sendNoteOff(byte note, byte velocity, byte channel) {
 	if (!thru) {
-
 		Serial.write(127 + channel);
 		Serial.write(note);
 		Serial.write(velocity);

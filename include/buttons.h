@@ -25,5 +25,6 @@ enum Button : uint8_t {
  * @param value New button state (false = pressed, true = released).
  */
 void buttChanged(Button number, bool value);
+void showArpMode();
 
 #endif // MEGAFM_CMAKE_BUTTONS_H

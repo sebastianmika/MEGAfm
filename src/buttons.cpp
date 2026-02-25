@@ -31,7 +31,6 @@ const byte presetChords[16][6] = {
 
 static bool resetFunction = false;
 
-
 void finishSetup() {
 	byte temp;
 	ledSet(9, 0);
@@ -86,6 +85,44 @@ void finishSetup() {
 	digit(1, 21);
 }
 
+void showArpMode() {
+	switch (arpMode) {
+		case kArpUp:
+			digit(0, 13);
+			digit(1, 14);
+			break; // up
+		case kArpDown:
+			digit(0, 15);
+			digit(1, 19);
+			break; // dn
+		case kArpUpDown:
+			digit(0, 13);
+			digit(1, 15);
+			break; // ud
+		case kArpRandom1:
+			digit(1, 1);
+			digit(0, 16);
+			break; // r1
+		case kArpRandom2:
+			digit(1, 2);
+			digit(0, 16);
+			break; // r2
+		case kArpSequence1:
+			digit(0, 5);
+			digit(1, 18);
+			break; // s1
+		case kArpSequence2:
+			digit(0, 5);
+			digit(1, 2);
+			break; // s2
+	}
+	if (arpMode) {
+		ledSet(23, 1);
+	} else {
+		ledSet(23, 0);
+	}
+}
+
 void buttChanged(Button number, bool value) {
 	if (millis() > 1000) {
 		if (setupMode) {
@@ -101,6 +138,7 @@ void buttChanged(Button number, bool value) {
 							digit(1, 0);
 						}
 						delay(800);
+						sendCC(70, 48 + thru);
 						break; // chain1
 
 					case kButtonChainLfo2:
@@ -118,6 +156,7 @@ void buttChanged(Button number, bool value) {
 							digit(1, 14);
 							delay(400);
 						}
+						sendCC(70, 50 + pickupMode);
 						break; // chain 2
 
 					case kButtonRetrig:
@@ -141,6 +180,7 @@ void buttChanged(Button number, bool value) {
 								delay(800);
 								break; // LA
 						}
+						sendCC(70, 60 + notePriority);
 						break; // retrig
 
 					case kButtonChainLfo3:
@@ -156,6 +196,7 @@ void buttChanged(Button number, bool value) {
 							digit(1, 3);
 							delay(800);
 						}
+						sendCC(70, 52 + stereoCh3);
 						break; // chain 3
 
 					case kButtonArpMode:
@@ -176,11 +217,13 @@ void buttChanged(Button number, bool value) {
 						}
 						EEPROM.write(3960, mpe);
 						ledSet(23, !mpe);
+						sendCC(70, 54 + mpe);
 						break; // MPE mode
 
 					case kButtonNoise:
 						fatSpreadMode = !fatSpreadMode;
 						ledSet(19, fatSpreadMode);
+						sendCC(70, 67 + fatSpreadMode);
 						break; // NOISE
 
 					case kButtonVoiceMode:
@@ -297,6 +340,7 @@ void buttChanged(Button number, bool value) {
 								fineChanged = true; // prevents voice mode change
 								setupCounter = 0;   // prevents entering setup
 								ledNumber(octOffset);
+								sendCC(74, octOffset);
 							} else {
 								if (arpModeHeld) {
 									changedChannel = true;
@@ -333,7 +377,7 @@ void buttChanged(Button number, bool value) {
 								ledNumber(octOffset);
 								fineChanged = true; // prevents voice mode change
 								setupCounter = 0;   // prevents entering setup
-
+								sendCC(74, octOffset);
 							} else {
 								if (arpModeHeld) {
 									changedChannel = true;
@@ -416,6 +460,7 @@ void buttChanged(Button number, bool value) {
 									lfoLedOn();
 									showLfo();
 								}
+								sendCC(70, 0 + invertedSquare[selectedLfo] + 16 * selectedLfo);
 							}
 						}
 						break; // square
@@ -441,6 +486,7 @@ void buttChanged(Button number, bool value) {
 								lfoShape[selectedLfo] = 1;
 								lfoLedOn();
 								showLfo();
+								sendCC(70, 2 + 16 * selectedLfo); // 70, 2 for tri, plus 16 per LFO
 							}
 
 							else {
@@ -489,6 +535,8 @@ void buttChanged(Button number, bool value) {
 										digit(1, 17);
 									}
 								}
+								sendCC(70, 3 + invertedSaw[selectedLfo] +
+								               16 * selectedLfo); // 70, 3/4 for saw/inv-saw, plus 16 per LFO
 							} else {
 								setSSEG(lastOperator, 0, 0); // operator bitIndex value}
 							}
@@ -537,10 +585,14 @@ void buttChanged(Button number, bool value) {
 									bitWrite(temp, 6, bitRead(noiseTableLength[2] - 2, 0));
 									bitWrite(temp, 7, bitRead(noiseTableLength[2] - 2, 1));
 									EEPROM.update(3950, temp);
+									fillRandomLfo(selectedLfo);
+									showLfo();
+								} else {
+									lfoShape[selectedLfo] = 3;
+									fillRandomLfo(selectedLfo);
+									showLfo();
+									sendCC(70, 5 + 16 * selectedLfo); // 70, 5 for noise, plus 16 per LFO
 								}
-								lfoShape[selectedLfo] = 3;
-								fillRandomLfo(selectedLfo);
-								showLfo();
 							}
 						}
 						break; // noise
@@ -565,7 +617,11 @@ void buttChanged(Button number, bool value) {
 							if (!showSSEGCounter) {
 								retrig[selectedLfo] = !retrig[selectedLfo];
 								showLfo();
-								sendCC(57, retrig[selectedLfo]);
+								// 6+7 lfo1 on/off
+								// 22+23 lfo2 on/off
+								// 38+39 lfo3 on/off
+								sendCC(70, 6 + retrig[selectedLfo] +
+								               16 * selectedLfo); // 70, 6-7 for retrig on/off, plus 16 per LFO
 							}
 						}
 						break; // retrig
@@ -648,7 +704,7 @@ void buttChanged(Button number, bool value) {
 											voiceMode = kVoicingDualCh3;
 										}
 										showVoiceMode(voiceMode);
-										sendCC(51, voiceMode);
+										sendCC(74, voiceMode);
 
 										// Reset notes after a voiceChange
 										resetVoices();
@@ -766,45 +822,21 @@ void buttChanged(Button number, bool value) {
 						if (!mpe) {
 							if (!changedChannel) {
 
-								if ((arpMode == 0) && (arpJustWentOff)) {
+								if ((arpMode == kArpOff) && (arpJustWentOff)) {
 									arpJustWentOff = false;
-								} else if ((arpMode == 0) && (!arpJustWentOff)) {
+								} else if ((arpMode == kArpOff) && (!arpJustWentOff)) {
 
 									resetVoices();
 
-									ledSet(23, 1);
 									arpMode = arpModeLast;
-									switch (arpMode) {
-										case 1:
-											digit(0, 13);
-											digit(1, 14);
-											break; // up
-										case 2:
-											digit(0, 15);
-											digit(1, 19);
-											break; // dn
-										case 3:
-											digit(0, 13);
-											digit(1, 15);
-											break; // ud
-										case 4:
-											digit(1, 1);
-											digit(0, 16);
-											break; // r1
-										case 5:
-											digit(1, 2);
-											digit(0, 16);
-											break; // r2
-										case 6:
-											digit(0, 5);
-											digit(1, 18);
-											break; // se
-									}
+									sendCC(70, 85 + arpMode);
+									showArpMode();
+									ledSet(23, 1);
 								} else if (arpMode > 0) {
 
 									arpMode++;
-									if (arpMode > 7) {
-										arpMode = 1;
+									if (arpMode > kArpModeCount) {
+										arpMode = kArpUp;
 										resyncArp = true;
 									}
 									arpModeLast = arpMode;
@@ -812,39 +844,10 @@ void buttChanged(Button number, bool value) {
 									if ((arpMode) && (voiceMode != kVoicingUnison) && (!mpe)) {
 										voiceMode = kVoicingUnison;
 										showVoiceMode(voiceMode);
-										sendCC(51, voiceMode);
+										sendCC(74, voiceMode);
 									}
 
-									switch (arpMode) {
-										case 1:
-											digit(0, 13);
-											digit(1, 14);
-											break; // up
-										case 2:
-											digit(0, 15);
-											digit(1, 19);
-											break; // dn
-										case 3:
-											digit(0, 13);
-											digit(1, 15);
-											break; // ud
-										case 4:
-											digit(1, 1);
-											digit(0, 16);
-											break; // r1
-										case 5:
-											digit(1, 2);
-											digit(0, 16);
-											break; // r2
-										case 6:
-											digit(0, 5);
-											digit(1, 1);
-											break; // s1
-										case 7:
-											digit(0, 5);
-											digit(1, 2);
-											break; // s2
-									}
+									showArpMode();
 								}
 							}
 						}
@@ -861,10 +864,12 @@ void buttChanged(Button number, bool value) {
 									if (voiceMode != kVoicingUnison) {
 										voiceMode = kVoicingUnison;
 										showVoiceMode(voiceMode);
+										sendCC(74, voiceMode);
 									}
 									seqRec = true;
 									displayFreeze = 0;
-									arpMode = 6;
+									arpMode = kArpSequence1;
+									sendCC(70, 85 + arpMode);
 									ledSet(23, 1);
 									digit(0, 5);
 									digit(1, 18);
@@ -882,6 +887,7 @@ void buttChanged(Button number, bool value) {
 							if (!cleared) {
 								linked[0][targetPot] = !linked[0][targetPot];
 								showLink();
+								sendCC(71, 2 * targetPot + linked[0][targetPot]);
 							}
 						}
 						break; // chain1
@@ -892,6 +898,7 @@ void buttChanged(Button number, bool value) {
 							if (!cleared) {
 								linked[1][targetPot] = !linked[1][targetPot];
 								showLink();
+								sendCC(72, 2 * targetPot + linked[1][targetPot]);
 							}
 						}
 						break; // chain2
@@ -902,6 +909,7 @@ void buttChanged(Button number, bool value) {
 							if (!cleared) {
 								linked[2][targetPot] = !linked[2][targetPot];
 								showLink();
+								sendCC(73, 2 * targetPot + linked[2][targetPot]);
 							}
 						}
 						break; // chain3
@@ -928,7 +936,10 @@ void buttChanged(Button number, bool value) {
 
 									looping[selectedLfo] = !looping[selectedLfo];
 									showLfo();
-									sendCC(58, looping[selectedLfo]);
+									// 8+9 = lfo1 on/off
+									// 24+25 = lfo2 on/off
+									// 40+41 = lfo3 on/off
+									sendCC(70, 8 + looping[selectedLfo] + 16 * selectedLfo);
 								} else {
 									setSSEG(lastOperator, 1,
 									        !bitRead(SSEG[lastOperator], 1)); // flip the SSEG enable bit

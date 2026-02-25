@@ -153,7 +153,7 @@ void loadPreset() {
 	}
 
 	voiceMode = kVoicingPoly12;
-	arpMode = 0;
+	arpMode = kArpOff;
 	lfoShape[0] = 0;
 	lfoShape[1] = 0;
 	lfoShape[2] = 0;
@@ -717,6 +717,7 @@ void savePreset() {
 	startTimer();
 }
 
+
 void shuffle() {
 	shuffled = true;
 
@@ -735,9 +736,9 @@ void shuffle() {
 		seq[i] = random(25);
 	}
 	if ((random(2)) && (random(2)) && (random(2))) {
-		arpMode = random(6);
+		arpMode = random(6); // 0-5 = all modes but sequencer
 	} else {
-		arpMode = 0;
+		arpMode = kArpOff;
 	}
 	showVoiceMode(voiceMode);
 }

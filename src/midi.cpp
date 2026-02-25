@@ -194,6 +194,8 @@ void handleStart() {
 	}
 }
 
+void handleContinue() { handleStart(); }
+
 void handleProgramChange(byte channel, byte program) {
 	if ((program < 99) && (channel == inputChannel)) {
 
@@ -1536,6 +1538,7 @@ void midiRead() {
 					handleStart();
 					break; // start
 				case 251:
+					handleContinue();
 					break; // continue
 				case 252:
 					handleStop();

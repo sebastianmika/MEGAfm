@@ -121,6 +121,7 @@ void showArpMode() {
 	} else {
 		ledSet(23, 0);
 	}
+	showPresetNumberTimeout = 12000;
 }
 
 void buttChanged(Button number, bool value) {
@@ -846,7 +847,7 @@ void buttChanged(Button number, bool value) {
 										showVoiceMode(voiceMode);
 										sendCC(74, voiceMode);
 									}
-
+									sendCC(70, 85 + arpMode);
 									showArpMode();
 								}
 							}

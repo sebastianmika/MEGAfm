@@ -1383,9 +1383,9 @@ void HandleControlChange(byte channel, byte number, byte val) {
 					}
 				}
 			}
-			lastData1 = number;
-			lastData2 = val;
 		}
+		lastData1 = number;
+		lastData2 = val;
 	}
 }
 

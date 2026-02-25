@@ -841,12 +841,6 @@ void buttChanged(Button number, bool value) {
 										resyncArp = true;
 									}
 									arpModeLast = arpMode;
-
-									if ((arpMode) && (voiceMode != kVoicingUnison) && (!mpe)) {
-										voiceMode = kVoicingUnison;
-										showVoiceMode(voiceMode);
-										sendCC(74, voiceMode);
-									}
 									sendCC(70, 85 + arpMode);
 									showArpMode();
 								}
@@ -856,27 +850,27 @@ void buttChanged(Button number, bool value) {
 						break; // arp mode
 					case kButtonArpRec:
 						if (noRecAction) {
-							if (presetTargetMode) {
-								presetTargetMode = false;
-								savePreset();
+							if (mpe) {
+								// no seq in mpe mode
 							} else {
-								if (!seqRec) {
-									seqLength = 0;
-									if (voiceMode != kVoicingUnison) {
-										voiceMode = kVoicingUnison;
-										showVoiceMode(voiceMode);
-										sendCC(74, voiceMode);
-									}
-									seqRec = true;
-									displayFreeze = 0;
-									arpMode = kArpSequence1;
-									sendCC(70, 85 + arpMode);
-									ledSet(23, 1);
-									digit(0, 5);
-									digit(1, 18);
+
+								if (presetTargetMode) {
+									presetTargetMode = false;
+									savePreset();
 								} else {
-									seqRec = false;
-									ledSet(22, 0);
+									if (!seqRec) {
+										seqLength = 0;
+										seqRec = true;
+										displayFreeze = 0;
+										arpMode = kArpSequence1;
+										sendCC(70, 85 + arpMode);
+										ledSet(23, 1);
+										digit(0, 5);
+										digit(1, 18);
+									} else {
+										seqRec = false;
+										ledSet(22, 0);
+									}
 								}
 							}
 						}

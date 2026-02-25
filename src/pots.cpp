@@ -23,7 +23,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 
 				switch (number) {
 
-					case 6:
+					case KNOB_ARP_RATE:
 						setupChanged = true;
 						if (data > 127) {
 							arpClockEnable = 1;
@@ -37,7 +37,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 						if (!isMidi)
 							sendCC(70, 56 + arpClockEnable);
 						break; // arp rate
-					case 15:
+					case KNOB_LFO1_RATE:
 						setupChanged = true;
 						if (data > 127) {
 							lfoClockEnable[0] = 1;
@@ -51,7 +51,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 						if (!isMidi)
 							sendCC(70, 10 + lfoClockEnable[0]);
 						break; // lfo 1 rate
-					case 10:
+					case KNOB_LFO2_RATE:
 						setupChanged = true;
 						if (data > 127) {
 							lfoClockEnable[1] = 1;
@@ -65,7 +65,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 						if (!isMidi)
 							sendCC(70, 10 + 16 + lfoClockEnable[1]);
 						break; // lfo 2 rate
-					case 14:
+					case KNOB_LFO3_RATE:
 						setupChanged = true;
 						if (data > 127) {
 							lfoClockEnable[2] = 1;
@@ -79,7 +79,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 						if (!isMidi)
 							sendCC(70, 10 + 32 + lfoClockEnable[2]);
 						break; // lfo 3 rate
-					case 48:
+					case KNOB_VIB_RATE:
 						setupChanged = true;
 						if (data > 127) {
 							vibratoClockEnable = 1;
@@ -95,7 +95,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							sendCC(70, 65 + vibratoClockEnable);
 						break; // vib rate
 
-					case 12:
+					case KNOB_LFO1_DEPTH:
 						setupChanged = true;
 						if (data > 127) {
 							lfoVel = 1;
@@ -123,7 +123,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							sendCC(70, 12 + lfoVel);
 						break; // lfo 1 depth
 
-					case 9:
+					case KNOB_LFO2_DEPTH:
 						setupChanged = true;
 						if (data > 127) {
 							lfoMod = 1;
@@ -151,7 +151,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							sendCC(70, 28 + lfoMod);
 						break; // lfo 2 depth
 
-					case 2:
+					case KNOB_LFO3_DEPTH:
 						setupChanged = true;
 						if (data > 127) {
 							lfoAt = 1;
@@ -179,7 +179,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							sendCC(70, 44 + lfoAt);
 						break; // lfo 3 depth
 
-					case 28:
+					case KNOB_FAT:
 						setupChanged = true;
 						if (data < 128) {
 							fatMode = FAT_MODE_SEMITONE;
@@ -194,7 +194,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							sendCC(70, 63 + fatMode);
 						break; // fat
 
-					case 1:
+					case KNOB_VOLUME:
 						setupChanged = true;
 						if (data > 127) {
 							ignoreVolume = 0;
@@ -209,7 +209,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							sendCC(70, 58 + ignoreVolume);
 						break; // volume preset
 
-					case 13:
+					case KNOB_VIB_DEPTH:
 						byte brightness = data >> 4;
 						if (brightness > 15)
 							brightness = 10;                   // default;
@@ -232,7 +232,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 					switch (number) {
 
 						// OP1
-						case 18:
+						case FADER_DETUNE_1:
 							showPickupAnimation = false;
 							if (loopHeld) {
 								loopChanged = true;
@@ -258,7 +258,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 
 							break; // detune
-						case 27:
+						case FADER_MULT_1:
 							showPickupAnimation = false;
 							fmBase[1] = data;
 							updateFMifNecessary(1);
@@ -269,7 +269,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // multiple
-						case 19:
+						case FADER_LEVEL_1:
 							showPickupAnimation = false;
 							fmBase[2] = data;
 							updateFMifNecessary(2);
@@ -280,7 +280,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // op level
-						case 29:
+						case FADER_ATTACK_1:
 							showPickupAnimation = false;
 							fmBase[4] = data;
 							updateFMifNecessary(4);
@@ -291,7 +291,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // attack
-						case 21:
+						case FADER_DECAY_1:
 							showPickupAnimation = false;
 							fmBase[5] = data;
 							updateFMifNecessary(5);
@@ -302,7 +302,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // decay1
-						case 25:
+						case FADER_SUSTAIN_1:
 							showPickupAnimation = false;
 							fmBase[7] = data;
 							updateFMifNecessary(7);
@@ -313,7 +313,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // sustain
-						case 17:
+						case FADER_SUSTAIN_RATE_1:
 							showPickupAnimation = false;
 							fmBase[6] = data;
 							updateFMifNecessary(9);
@@ -324,7 +324,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // sustain rate
-						case 30:
+						case FADER_RELEASE_1:
 							showPickupAnimation = false;
 							fmBase[8] = data;
 							updateFMifNecessary(8);
@@ -337,7 +337,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							break; // release
 
 							// OP2
-						case 31:
+						case FADER_DETUNE_2:
 							showPickupAnimation = false;
 							if (loopHeld) {
 								loopChanged = true;
@@ -362,7 +362,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								}
 							}
 							break; // detune
-						case 32:
+						case FADER_MULT_2:
 							showPickupAnimation = false;
 							fmBase[19] = data;
 							updateFMifNecessary(19);
@@ -373,7 +373,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // multiple
-						case 40:
+						case FADER_LEVEL_2:
 							showPickupAnimation = false;
 							fmBase[20] = data;
 							updateFMifNecessary(20);
@@ -384,7 +384,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // op level
-						case 36:
+						case FADER_ATTACK_2:
 							showPickupAnimation = false;
 							fmBase[22] = data;
 							updateFMifNecessary(22);
@@ -395,7 +395,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // attack WAS 59
-						case 44:
+						case FADER_DECAY_2:
 							showPickupAnimation = false;
 							fmBase[23] = data;
 							updateFMifNecessary(23);
@@ -406,7 +406,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // decay1 WAS 50
-						case 42:
+						case FADER_SUSTAIN_2:
 							showPickupAnimation = false;
 							fmBase[25] = data;
 							updateFMifNecessary(25);
@@ -417,7 +417,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // sustain WAS 60
-						case 34:
+						case FADER_SUSTAIN_RATE_2:
 							showPickupAnimation = false;
 							fmBase[24] = data;
 							updateFMifNecessary(24);
@@ -428,7 +428,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // sustain rate WAS 55
-						case 11:
+						case FADER_RELEASE_2:
 							showPickupAnimation = false;
 							fmBase[26] = data;
 							updateFMifNecessary(26);
@@ -441,7 +441,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							break; // release WAS 52
 
 							// OP3
-						case 20:
+						case FADER_DETUNE_3:
 							showPickupAnimation = false;
 
 							if (loopHeld) {
@@ -467,7 +467,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								}
 							}
 							break; // detune
-						case 24:
+						case FADER_MULT_3:
 							showPickupAnimation = false;
 							fmBase[10] = data;
 							updateFMifNecessary(10);
@@ -478,7 +478,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // multiple
-						case 16:
+						case FADER_LEVEL_3:
 							showPickupAnimation = false;
 							fmBase[11] = data;
 							updateFMifNecessary(11);
@@ -489,7 +489,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // op level
-						case 8:
+						case FADER_ATTACK_3:
 							showPickupAnimation = false;
 							fmBase[13] = data;
 							updateFMifNecessary(13);
@@ -500,7 +500,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(49, data >> 1);
 							}
 							break; // attack
-						case 0:
+						case FADER_DECAY_3:
 							showPickupAnimation = false;
 							fmBase[14] = data;
 							updateFMifNecessary(14);
@@ -511,7 +511,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(50, data >> 1);
 							}
 							break; // decay1
-						case 7:
+						case FADER_SUSTAIN_3:
 							showPickupAnimation = false;
 							fmBase[16] = data;
 							updateFMifNecessary(16);
@@ -522,7 +522,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(51, data >> 1);
 							}
 							break; // sustain
-						case 45:
+						case FADER_SUSTAIN_RATE_3:
 							showPickupAnimation = false;
 							fmBase[15] = data;
 							updateFMifNecessary(15);
@@ -533,7 +533,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // sustain rate
-						case 37:
+						case FADER_RELEASE_3:
 							showPickupAnimation = false;
 							fmBase[17] = data;
 							updateFMifNecessary(17);
@@ -546,7 +546,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							break; // release
 
 							// OP4
-						case 47:
+						case FADER_DETUNE_4:
 							showPickupAnimation = false;
 							if (loopHeld) {
 								loopChanged = true;
@@ -571,7 +571,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								}
 							}
 							break; // detune
-						case 39:
+						case FADER_MULT_4:
 							showPickupAnimation = false;
 							fmBase[28] = data;
 							updateFMifNecessary(28);
@@ -582,7 +582,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // multiple
-						case 38:
+						case FADER_LEVEL_4:
 							showPickupAnimation = false;
 							fmBase[29] = data;
 							updateFMifNecessary(29);
@@ -593,7 +593,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // op level
-						case 46:
+						case FADER_ATTACK_4:
 							showPickupAnimation = false;
 							fmBase[31] = data;
 							updateFMifNecessary(31);
@@ -604,7 +604,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // attack
-						case 33:
+						case FADER_DECAY_4:
 							showPickupAnimation = false;
 							fmBase[32] = data;
 							updateFMifNecessary(32);
@@ -615,7 +615,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // decay1
-						case 41:
+						case FADER_SUSTAIN_4:
 							showPickupAnimation = false;
 							fmBase[34] = data;
 							updateFMifNecessary(34);
@@ -626,7 +626,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // sustain
-						case 43:
+						case FADER_SUSTAIN_RATE_4:
 							showPickupAnimation = false;
 							fmBase[33] = data;
 							updateFMifNecessary(33);
@@ -637,7 +637,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // sustain rate
-						case 35:
+						case FADER_RELEASE_4:
 							showPickupAnimation = false;
 							fmBase[35] = data;
 							updateFMifNecessary(35);
@@ -649,7 +649,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 							break; // release
 
-						case 1:
+						case KNOB_VOLUME:
 							showPickupAnimation = false;
 							setupCounter = 0; // prevent entering setup
 							if (voiceHeld) {
@@ -680,7 +680,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 							break; // volume
 
-						case 4:
+						case KNOB_ALGO:
 							showPickupAnimation = false;
 							if (isMidi) {
 								data -= 1;
@@ -694,7 +694,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 							break; // algo
 
-						case 3:
+						case KNOB_FEEDBACK:
 							showPickupAnimation = false;
 							fmBase[43] = data;
 							updateFMifNecessary(43);
@@ -705,7 +705,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 							break; // feedback
 
-						case 28:
+						case KNOB_FAT:
 							showPickupAnimation = false;
 							setupCounter = 0; // prevent entering setup
 
@@ -735,14 +735,14 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 							break; // fat 1-127
 
-						case 15:
+						case KNOB_LFO1_RATE:
 							showPickupAnimation = false;
 							fmBase[36] = data;
 							if (data < 5 && lfoVel) {
 								fmBase[36] = data = 0;
 							}
 							updateFMifNecessary(36);
-							if ((lfoVel) && (!data)) {
+							if (lfoVel) {
 								digit(0, 13);
 								digit(1, 18);
 							} else {
@@ -776,7 +776,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								}
 							}
 							break; // lfo 1 rate
-						case 12:
+						case KNOB_LFO1_DEPTH:
 							showPickupAnimation = false;
 							fmBase[37] = data;
 							updateFMifNecessary(37);
@@ -788,7 +788,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 							break; // lfo 1 depth
 
-						case 10:
+						case KNOB_LFO2_RATE:
 							showPickupAnimation = false;
 							fmBase[38] = data;
 							updateFMifNecessary(38);
@@ -808,7 +808,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								}
 							}
 							break; // lfo 2 rate
-						case 9:
+						case KNOB_LFO2_DEPTH:
 							showPickupAnimation = false;
 							fmBase[39] = data;
 							updateFMifNecessary(39);
@@ -820,7 +820,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 							break; // lfo 2 depth
 
-						case 14:
+						case KNOB_LFO3_RATE:
 							showPickupAnimation = false;
 							fmBase[40] = data;
 							updateFMifNecessary(40);
@@ -829,7 +829,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								fmBase[40] = data = 0;
 							}
 
-							if ((lfoAt) && (data < 1)) {
+							if (lfoAt) {
 								digit(0, 17);
 								digit(1, 26);
 							} else {
@@ -845,7 +845,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								}
 							}
 							break; // lfo 3 rate
-						case 2:
+						case KNOB_LFO3_DEPTH:
 							showPickupAnimation = false;
 							fmBase[41] = data;
 							updateFMifNecessary(41);
@@ -857,13 +857,13 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 							break; // lfo 3 depth
 
-						case 6:
+						case KNOB_ARP_RATE:
 							showPickupAnimation = false;
 							fmBase[46] = data;
 							updateFMifNecessary(46);
 							if (sync) {
-								ledNumber(kArpRateDisplay[data >> 5]);
-								arpMidiSpeedPending = data >> 5;
+								ledNumber(kArpRateDisplay[map(data, 0, 255, 0, 10)]);
+								arpMidiSpeedPending = map(data, 0, 255, 0, 10);
 							} else {
 								ledNumber(data >> 2);
 							}
@@ -872,7 +872,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; /// arp rate
-						case 5:
+						case KNOB_ARP_RANGE:
 							showPickupAnimation = false;
 							// This looks wrong; in midi.cpp we already do data << 1 before coming here; this makes this
 							// go up to 16384; Now, if this is NOT midi data but pot - which seems to go 0-255 looking
@@ -889,7 +889,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 							break; // arp range
 
-						case 48:
+						case KNOB_VIB_RATE:
 							showPickupAnimation = false;
 							fmBase[48] = data;
 							updateFMifNecessary(48);
@@ -903,7 +903,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								sendCC(number, data >> 1);
 							}
 							break; // vibrato rate WAS 7
-						case 13:
+						case KNOB_VIB_DEPTH:
 							showPickupAnimation = false;
 							fmBase[49] = data;
 							updateFMifNecessary(49);

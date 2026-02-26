@@ -57,7 +57,7 @@
 #define FADER_RELEASE_4 35
 
 const byte kVersion0 = 4;
-const byte kVersion1 = 1;
+const byte kVersion1 = 2;
 
 const byte kDefaultSeq[16] = {0, 0, 0, 0, 12, 12, 12, 12, 0, 0, 12, 0, 0, 12, 12, 0};
 

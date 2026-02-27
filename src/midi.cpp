@@ -1322,7 +1322,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 						linked[selectedLfo][targetPot] = isLinked;
 						showLink();
 					}
-				} else if (number == 74) {
+				} else if (number == 78) {
 					// Set voice mode (0-5)
 					// Set octave offset (10-13 --> 0-3)
 					// Set rate scaling
@@ -1546,13 +1546,13 @@ void dumpPreset() {
 		}
 	}
 	// send other settings
-	sendCCForce(74, 20 + (fmBase[3] >> 6));   // op1 rate scaling
-	sendCCForce(74, 30 + (fmBase[12] >> 6));  // op2 rate scaling
-	sendCCForce(74, 40 + (fmBase[21] >> 6));  // op3 rate scaling
-	sendCCForce(74, 50 + (fmBase[30] >> 6));  // op4 rate scaling
+	sendCCForce(78, 20 + (fmBase[3] >> 6));   // op1 rate scaling
+	sendCCForce(78, 30 + (fmBase[12] >> 6));  // op2 rate scaling
+	sendCCForce(78, 40 + (fmBase[21] >> 6));  // op3 rate scaling
+	sendCCForce(78, 50 + (fmBase[30] >> 6));  // op4 rate scaling
 	sendCCForce(70, 56 + arpClockEnable);     // arp clock on/off
 	sendCCForce(70, 65 + vibratoClockEnable); // vibrato clock on/off
-	sendCCForce(74, 85 + arpMode);
+	sendCCForce(78, 85 + arpMode);
 
 	for (int i = 0; i < 3; i++) {
 		byte shape = lfoShape[i];
@@ -1584,8 +1584,8 @@ void dumpPreset() {
 	sendCCForce(70, 58 + (1 - ignoreVolume));
 	sendCCForce(70, 69 + EEPROM.read(3965)); // brightness
 
-	sendCCForce(74, voiceMode);
-	sendCCForce(74, 10 + octOffset);
+	sendCCForce(78, voiceMode);
+	sendCCForce(78, 10 + octOffset);
 	sendCCForce(75, glide << 3); // Todo: check
 	sendCCForce(76, fine >> 1);
 

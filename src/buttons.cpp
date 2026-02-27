@@ -341,7 +341,7 @@ void buttChanged(Button number, bool value) {
 								fineChanged = true; // prevents voice mode change
 								setupCounter = 0;   // prevents entering setup
 								ledNumber(octOffset);
-								sendCC(74, octOffset);
+								sendCC(78, 10 + octOffset);
 							} else {
 								if (arpModeHeld) {
 									changedChannel = true;
@@ -378,7 +378,7 @@ void buttChanged(Button number, bool value) {
 								ledNumber(octOffset);
 								fineChanged = true; // prevents voice mode change
 								setupCounter = 0;   // prevents entering setup
-								sendCC(74, octOffset);
+								sendCC(78, 10 + octOffset);
 							} else {
 								if (arpModeHeld) {
 									changedChannel = true;
@@ -705,7 +705,7 @@ void buttChanged(Button number, bool value) {
 											voiceMode = kVoicingDualCh3;
 										}
 										showVoiceMode(voiceMode);
-										sendCC(74, voiceMode);
+										sendCC(78, voiceMode);
 
 										// Reset notes after a voiceChange
 										resetVoices();

@@ -240,7 +240,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								fmBase[3] = data;
 								ledNumber(data >> 6);
 								if (!isMidi) {
-									sendCC(74, 20 + (data >> 6));
+									sendCC(78, 20 + (data >> 6));
 								}
 							} else {
 								fmBase[0] = data;
@@ -345,7 +345,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								fmBase[12] = data;
 								ledNumber(data >> 6);
 								if (!isMidi) {
-									sendCC(74, 30 + (data >> 6));
+									sendCC(78, 30 + (data >> 6));
 								}
 							} else {
 								fmBase[18] = data;
@@ -450,7 +450,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								fmBase[21] = data;
 								ledNumber(data >> 6);
 								if (!isMidi) {
-									sendCC(74, 40 + (data >> 6));
+									sendCC(78, 40 + (data >> 6));
 								}
 							} else {
 								fmBase[9] = data;
@@ -554,7 +554,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 								fmBase[30] = data;
 								ledNumber(data >> 6);
 								if (!isMidi) {
-									sendCC(74, 50 + (data >> 6));
+									sendCC(78, 50 + (data >> 6));
 								}
 							} else {
 								fmBase[27] = data;

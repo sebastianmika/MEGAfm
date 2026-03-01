@@ -812,10 +812,16 @@ void setBrightness(byte brightness) {
 }
 
 void showOnOff(bool on) {
-	if (on)
+	if (on) {
+		// On
+		digit(0, 0);
 		digit(1, 19);
-	else
+	} else {
+		// OF
+		digit(0, 0);
 		digit(1, 12);
+	}
+	showPresetNumberTimeout = 12000;
 }
 
 void setOperatorEnvelopeMode(byte op, kEnvelopeMode mode) {
@@ -1625,8 +1631,10 @@ void dumpPreset() {
 			val = 2;
 		else if (shape == 2)
 			val = 3 + invertedSaw[i];
-		else if (shape == 3)
+		else if (shape == 3) {
 			val = 5;
+			val += noiseTableLength[i] - 2; // 0 for 8 steps, 1 for 16 steps, 2 for 32 steps
+		}
 		sendCCForce(70, val + 16 * i);
 		sendCCForce(70, 8 + looping[i] + 16 * i);
 		sendCCForce(70, 6 + retrig[i] + 16 * i);

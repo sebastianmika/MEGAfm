@@ -235,11 +235,11 @@ void showSSEG() {
 	if (bitRead(SSEG[lastOperator], 1)) {
 		ledSet(LED_LOOP, 1);
 		ledSet(LED_TRIANGLE, bitRead(SSEG[lastOperator], 0)); // saw
-		ledSet(LED_SAW, !bitRead(SSEG[lastOperator], 0)); // saw
-	} else  {
+		ledSet(LED_SAW, !bitRead(SSEG[lastOperator], 0));     // saw
+	} else {
 		ledSet(LED_LOOP, 0);
 	}
-	showSSEGCounter = 12000;                    // show the regular LFO leds when this expires
+	showSSEGCounter = 12000; // show the regular LFO leds when this expires
 }
 
 void showLink() {

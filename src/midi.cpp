@@ -818,6 +818,38 @@ void showOnOff(bool on) {
 		digit(1, 12);
 }
 
+void setOperatorEnvelopeMode(byte op, kEnvelopeMode mode) {
+	switch (mode) {
+		case kEnvelopeOff:
+			if (bitRead(SSEG[op], 1))
+				// turn off
+				setSSEG(op, 1, 0);
+			break;
+		case kEnvelopeOnce:
+			if (!bitRead(SSEG[op], 1))
+				// turn on, set mode
+				setSSEG(op, 1, 1);
+			setSSEG(op, 0, 0);
+			break;
+		case kEnvelopPingPong:
+			if (!bitRead(SSEG[op], 1))
+				// turn on, set mode
+				setSSEG(op, 1, 1);
+			setSSEG(op, 0, 1);
+			break;
+	}
+}
+
+kEnvelopeMode getOperatorEnvelopeMode(byte op) {
+	if (bitRead(SSEG[op], 1)) {
+		if (bitRead(SSEG[op], 0)) {
+			return kEnvelopPingPong;
+		} else {
+			return kEnvelopeOnce;
+		}
+	}
+	return kEnvelopeOff;
+}
 
 void HandleControlChange(byte channel, byte number, byte val) {
 	byte temp;
@@ -1036,10 +1068,10 @@ void HandleControlChange(byte channel, byte number, byte val) {
 
 			else if (channel == inputChannel) {
 				if (number == 0) {
-					if (val < 5) {
+					if (val <= 5) {
 						if (bank != val) {
 							bank = val;
-							handleProgramChange(inputChannel, preset - 1);
+							handleProgramChange(inputChannel, preset);
 						}
 					}
 				} else if (number == 50) {
@@ -1126,7 +1158,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 					    LED Brightness				69 - 84
 
 					    Arp Mode 0-7				85 - 92 (off, up, down, up/down, rnd1, rnd2, seq1, seq2)
-						
+
 						// Added later - see other lfo shapes above
 						Random 8					93		96		99
 						Random 16					94		97		100
@@ -1343,11 +1375,11 @@ void HandleControlChange(byte channel, byte number, byte val) {
 				} else if (number == 78) {
 					// Set voice mode (0-5)
 					// Set octave offset (10-13 --> 0-3)
-					// Set rate scaling
-					//   * op1: 20-23
-					//   * op2: 30-33
-					//   * op3: 40-43
-					//   * op4: 50-53
+					// Set rate scaling, envelope
+					//   * op1: 20-23 (0-3), 25-27 (off, forward, ping pong)
+					//   * op2: 30-33 (0-3), 35-37 (off, forward, ping pong)
+					//   * op3: 40-43 (0-3), 45-47 (off, forward, ping pong)
+					//   * op4: 50-53 (0-3), 55-57 (off, forward, ping pong)
 					if (val <= 5) {
 						if (!mpe) {
 							voiceMode = VoiceMode(val);
@@ -1362,21 +1394,29 @@ void HandleControlChange(byte channel, byte number, byte val) {
 						updateFMifNecessary(3);
 						fmBase[3] = (val - 20) << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
 						ledNumber(val - 20);
+					} else if (val >= 25 && val <= 27) {
+						setOperatorEnvelopeMode(0, kEnvelopeMode(val - 25));
 					} else if (val >= 30 && val <= 33) {
 						// Set rate scaling for operators 2
 						updateFMifNecessary(12);
 						fmBase[12] = (val - 30) << 6;
 						ledNumber(val - 30);
+					} else if (val >= 35 && val <= 37) {
+						setOperatorEnvelopeMode(1, kEnvelopeMode(val - 35));
 					} else if (val >= 40 && val <= 43) {
 						// Set rate scaling for operators 3
 						updateFMifNecessary(21);
 						fmBase[21] = (val - 40) << 6;
 						ledNumber(val - 40);
+					} else if (val >= 45 && val <= 47) {
+						setOperatorEnvelopeMode(2, kEnvelopeMode(val - 45));
 					} else if (val >= 50 && val <= 53) {
 						// Set rate scaling for operators 4
 						updateFMifNecessary(30);
 						fmBase[30] = (val - 50) << 6;
 						ledNumber(val - 50);
+					} else if (val >= 55 && val <= 57) {
+						setOperatorEnvelopeMode(3, kEnvelopeMode(val - 55));
 					}
 				} else if (number == 75) {
 					// Set glide
@@ -1568,6 +1608,10 @@ void dumpPreset() {
 	sendCCForce(78, 30 + (fmBase[12] >> 6));  // op2 rate scaling
 	sendCCForce(78, 40 + (fmBase[21] >> 6));  // op3 rate scaling
 	sendCCForce(78, 50 + (fmBase[30] >> 6));  // op4 rate scaling
+	sendCCForce(78, 25 + getOperatorEnvelopeMode(0)); // op1 envelope mode
+	sendCCForce(78, 35 + getOperatorEnvelopeMode(1)); // op2 envelope mode
+	sendCCForce(78, 45 + getOperatorEnvelopeMode(2)); // op3 envelope mode
+	sendCCForce(78, 55 + getOperatorEnvelopeMode(3)); // op4 envelope mode
 	sendCCForce(70, 56 + arpClockEnable);     // arp clock on/off
 	sendCCForce(70, 65 + vibratoClockEnable); // vibrato clock on/off
 	sendCCForce(70, 85 + arpMode);

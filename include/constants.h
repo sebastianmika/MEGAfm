@@ -114,6 +114,12 @@ enum kLfoShape {
     kRandom = 3,
 };
 
+enum kEnvelopeMode {
+	kEnvelopeOff = 0,
+	kEnvelopeOnce = 1,
+	kEnvelopPingPong = 2
+};
+
 const byte kFactoryPresets[] = {
     105, 22,  43,  52,  63,  5,   68,  91,  16,  31,  31,  243, 182, 78,  32,  62,  63,  3,   8,   127, 16,  21,  16,
     213, 89,  15,  73,  0,   4,   74,  7,   7,   6,   31,  0,   0,   255, 0,   0,   73,  8,   2,   0,   0,   0,   0,

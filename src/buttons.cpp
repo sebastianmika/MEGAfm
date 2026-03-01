@@ -191,6 +191,21 @@ void showLfoWaveform(byte selectedLfo) {
 	showPresetNumberTimeout = 12000;
 }
 
+void sendSSEGCC(byte op) {
+	if (bitRead(SSEG[op], 1)) {
+		// on; send mode
+		if (!bitRead(SSEG[op], 0)) {
+			// loop mode
+			sendCC(78, 25 + 10 * op + 1); // 26, 36, 46 = loop
+		} else {
+			sendCC(78, 25 + 10 * op + 2);  // 27, 37, 47 = ping pong
+		}
+	} else {
+		// off; send pitch
+		sendCC(78, 25 + 10 * op); // 25, 35, 45 = off
+	}
+}
+
 void buttChanged(Button number, bool value) {
 	if (millis() > 1000) {
 		if (setupMode) {
@@ -560,6 +575,7 @@ void buttChanged(Button number, bool value) {
 
 							else {
 								setSSEG(lastOperator, 0, 1); // operator bitIndex value
+								sendSSEGCC(lastOperator);
 							}
 						}
 						break; // triangle
@@ -594,6 +610,7 @@ void buttChanged(Button number, bool value) {
 								showLfoWaveform(selectedLfo);
 							} else {
 								setSSEG(lastOperator, 0, 0); // operator bitIndex value}
+								sendSSEGCC(lastOperator);
 							}
 						}
 						break; // saw
@@ -874,7 +891,7 @@ void buttChanged(Button number, bool value) {
 								} else if (arpMode > 0) {
 
 									arpMode++;
-									if (arpMode > kArpModeCount) {
+									if (arpMode >= kArpModeCount) {
 										arpMode = kArpUp;
 										resyncArp = true;
 									}
@@ -976,6 +993,7 @@ void buttChanged(Button number, bool value) {
 								} else {
 									setSSEG(lastOperator, 1,
 									        !bitRead(SSEG[lastOperator], 1)); // flip the SSEG enable bit
+									sendSSEGCC(lastOperator);
 								}
 							}
 						}

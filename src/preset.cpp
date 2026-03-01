@@ -723,7 +723,6 @@ void savePreset() {
 	startTimer();
 }
 
-
 void shuffle() {
 	shuffled = true;
 

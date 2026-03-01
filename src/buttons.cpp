@@ -124,7 +124,7 @@ void showArpMode() {
 	showPresetNumberTimeout = 12000;
 }
 
-void setNoiseTableLength(byte selectedLfo, byte length){
+void setNoiseTableLength(byte selectedLfo, byte length) {
 	if (length == noiseTableLength[selectedLfo]) {
 		return;
 	}
@@ -170,7 +170,7 @@ void showLfoWaveform(byte selectedLfo) {
 				// Ra (mp)
 				digit(0, 16);
 				digit(1, 17);
-			} else {		
+			} else {
 				// Sa (w)
 				digit(0, 5);
 				digit(1, 17);
@@ -187,7 +187,7 @@ void showLfoWaveform(byte selectedLfo) {
 			}
 			break;
 	}
-	
+
 	showPresetNumberTimeout = 12000;
 }
 
@@ -198,7 +198,7 @@ void sendSSEGCC(byte op) {
 			// loop mode
 			sendCC(78, 25 + 10 * op + 1); // 26, 36, 46 = loop
 		} else {
-			sendCC(78, 25 + 10 * op + 2);  // 27, 37, 47 = ping pong
+			sendCC(78, 25 + 10 * op + 2); // 27, 37, 47 = ping pong
 		}
 	} else {
 		// off; send pitch
@@ -647,7 +647,7 @@ void buttChanged(Button number, bool value) {
 									// cc=70, noise 8, 16, 32 on 93-95, plus 3 per LFO
 									sendCC(70, 93 + (noiseTableLength[selectedLfo] - 3) + 3 * selectedLfo);
 								}
-								
+
 								showLfoWaveform(selectedLfo);
 							}
 						}

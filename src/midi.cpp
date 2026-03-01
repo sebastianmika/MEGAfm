@@ -1165,10 +1165,10 @@ void HandleControlChange(byte channel, byte number, byte val) {
 
 					    Arp Mode 0-7				85 - 92 (off, up, down, up/down, rnd1, rnd2, seq1, seq2)
 
-						// Added later - see other lfo shapes above
-						Random 8					93		96		99
-						Random 16					94		97		100
-						Random 32					95		98		101
+					    // Added later - see other lfo shapes above
+					    Random 8					93		96		99
+					    Random 16					94		97		100
+					    Random 32					95		98		101
 
 					*/
 					if (val <= 47) {
@@ -1610,16 +1610,16 @@ void dumpPreset() {
 		}
 	}
 	// send other settings
-	sendCCForce(78, 20 + (fmBase[3] >> 6));   // op1 rate scaling
-	sendCCForce(78, 30 + (fmBase[12] >> 6));  // op2 rate scaling
-	sendCCForce(78, 40 + (fmBase[21] >> 6));  // op3 rate scaling
-	sendCCForce(78, 50 + (fmBase[30] >> 6));  // op4 rate scaling
+	sendCCForce(78, 20 + (fmBase[3] >> 6));           // op1 rate scaling
+	sendCCForce(78, 30 + (fmBase[12] >> 6));          // op2 rate scaling
+	sendCCForce(78, 40 + (fmBase[21] >> 6));          // op3 rate scaling
+	sendCCForce(78, 50 + (fmBase[30] >> 6));          // op4 rate scaling
 	sendCCForce(78, 25 + getOperatorEnvelopeMode(0)); // op1 envelope mode
 	sendCCForce(78, 35 + getOperatorEnvelopeMode(1)); // op2 envelope mode
 	sendCCForce(78, 45 + getOperatorEnvelopeMode(2)); // op3 envelope mode
 	sendCCForce(78, 55 + getOperatorEnvelopeMode(3)); // op4 envelope mode
-	sendCCForce(70, 56 + arpClockEnable);     // arp clock on/off
-	sendCCForce(70, 65 + vibratoClockEnable); // vibrato clock on/off
+	sendCCForce(70, 56 + arpClockEnable);             // arp clock on/off
+	sendCCForce(70, 65 + vibratoClockEnable);         // vibrato clock on/off
 	sendCCForce(70, 85 + arpMode);
 
 	for (int i = 0; i < 3; i++) {

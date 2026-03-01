@@ -86,14 +86,14 @@ const float kLfoClockRates[] = {0.6640625, 1.328125, 2.65625, 5.3125, 7.96875, 1
 const uint16_t kBankOffsets[] = {0, 7900, 15800, 23700, 31600, 39500};
 
 enum ArpMode {
-    kArpOff = 0,
-    kArpUp = 1,
-    kArpDown = 2,
-    kArpUpDown = 3,
-    kArpRandom1 = 4,
-    kArpRandom2 = 5,
-    kArpSequence1 = 6,
-    kArpSequence2 = 7
+	kArpOff = 0,
+	kArpUp = 1,
+	kArpDown = 2,
+	kArpUpDown = 3,
+	kArpRandom1 = 4,
+	kArpRandom2 = 5,
+	kArpSequence1 = 6,
+	kArpSequence2 = 7
 };
 const int kArpModeCount = 8;
 
@@ -108,17 +108,13 @@ enum VoiceMode {
 const int kVoiceModeCount = 6;
 
 enum kLfoShape {
-    kSquare = 0,
-    kTriangle = 1,
-    kSaw = 2,
-    kRandom = 3,
+	kSquare = 0,
+	kTriangle = 1,
+	kSaw = 2,
+	kRandom = 3,
 };
 
-enum kEnvelopeMode {
-	kEnvelopeOff = 0,
-	kEnvelopeOnce = 1,
-	kEnvelopPingPong = 2
-};
+enum kEnvelopeMode { kEnvelopeOff = 0, kEnvelopeOnce = 1, kEnvelopPingPong = 2 };
 
 const byte kFactoryPresets[] = {
     105, 22,  43,  52,  63,  5,   68,  91,  16,  31,  31,  243, 182, 78,  32,  62,  63,  3,   8,   127, 16,  21,  16,

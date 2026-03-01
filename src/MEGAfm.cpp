@@ -291,9 +291,9 @@ void enterSetup() {
 	digit(0, 5);
 	digit(1, 18);
 	setupMode = true;
-	ledSet(13, thru);
-	ledSet(14, pickupMode);
-	ledSet(19, fatSpreadMode);
+	ledSet(LED_LFO1_LINK, thru);
+	ledSet(LED_LFO2_LINK, pickupMode);
+	ledSet(LED_LFO3_LINK, fatSpreadMode);
 }
 
 void setup() {

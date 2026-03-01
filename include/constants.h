@@ -56,6 +56,23 @@
 #define FADER_SUSTAIN_RATE_4 43
 #define FADER_RELEASE_4 35
 
+// LED 1-8 = algorithm
+#define LED_VOICE_MODE_POLY12 9
+#define LED_VOICE_MODE_WIDE6 10
+#define LED_VOICE_MODE_DUALCH3 11
+#define LED_VOICE_MODE_UNISON 12
+#define LED_LFO1_LINK 13
+#define LED_LFO2_LINK 14
+#define LED_LFO3_LINK 15
+#define LED_SQUARE 16
+#define LED_TRIANGLE 17
+#define LED_SAW 18
+#define LED_RANDOM 19
+#define LED_RETRIGGER 20
+#define LED_LOOP 21
+#define LED_SEQ_REC 22
+#define LED_ARP_MODE 23
+
 const byte kVersion0 = 4;
 const byte kVersion1 = 2;
 
@@ -89,6 +106,13 @@ enum VoiceMode {
 	kVoicingWide3 = 5
 };
 const int kVoiceModeCount = 6;
+
+enum kLfoShape {
+    kSquare = 0,
+    kTriangle = 1,
+    kSaw = 2,
+    kRandom = 3,
+};
 
 const byte kFactoryPresets[] = {
     105, 22,  43,  52,  63,  5,   68,  91,  16,  31,  31,  243, 182, 78,  32,  62,  63,  3,   8,   127, 16,  21,  16,

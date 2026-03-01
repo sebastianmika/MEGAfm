@@ -818,6 +818,7 @@ void showOnOff(bool on) {
 		digit(1, 12);
 }
 
+
 void HandleControlChange(byte channel, byte number, byte val) {
 	byte temp;
 
@@ -1043,8 +1044,6 @@ void HandleControlChange(byte channel, byte number, byte val) {
 					}
 				} else if (number == 50) {
 					movedPot(0, val << 1, 1);
-				} else if (number == 42) {
-					movedPot(42, val << 5, 1);
 				} else if (number == 51) {
 					movedPot(7, val << 1, 1);
 				} else if (number == 49) {
@@ -1080,7 +1079,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 					    Tri							02		18		34
 					    Saw							03		19		35
 					    InvSaw						04		20		36
-					    Random						05		21		37
+					    Random inf					05		21		37
 
 					    Retriger Off				06		22		38
 					    Retriger On					07		23		39
@@ -1127,6 +1126,12 @@ void HandleControlChange(byte channel, byte number, byte val) {
 					    LED Brightness				69 - 84
 
 					    Arp Mode 0-7				85 - 92 (off, up, down, up/down, rnd1, rnd2, seq1, seq2)
+						
+						// Added later - see other lfo shapes above
+						Random 8					93		96		99
+						Random 16					94		97		100
+						Random 32					95		98		101
+
 					*/
 					if (val <= 47) {
 						byte selectedLfo = val / 16;
@@ -1135,30 +1140,37 @@ void HandleControlChange(byte channel, byte number, byte val) {
 							case 0:
 								// square
 								invertedSquare[selectedLfo] = false;
-								lfoShape[selectedLfo] = 0;
+								lfoShape[selectedLfo] = kSquare;
+								showLfoWaveform(selectedLfo);
 								break;
 							case 1:
 								// inverted square
 								invertedSquare[selectedLfo] = true;
-								lfoShape[selectedLfo] = 0;
+								lfoShape[selectedLfo] = kSquare;
+								showLfoWaveform(selectedLfo);
 								break;
 							case 2:
 								// triangle
-								lfoShape[selectedLfo] = 1;
+								lfoShape[selectedLfo] = kTriangle;
+								showLfoWaveform(selectedLfo);
 								break;
 							case 3:
 								// saw
 								invertedSaw[selectedLfo] = false;
-								lfoShape[selectedLfo] = 2;
+								lfoShape[selectedLfo] = kSaw;
+								showLfoWaveform(selectedLfo);
 								break;
 							case 4:
 								// inverted saw
 								invertedSaw[selectedLfo] = true;
-								lfoShape[selectedLfo] = 2;
+								lfoShape[selectedLfo] = kSaw;
+								showLfoWaveform(selectedLfo);
 								break;
 							case 5:
 								// random
-								lfoShape[selectedLfo] = 3;
+								lfoShape[selectedLfo] = kRandom;
+								noiseTableLength[selectedLfo] = 2;
+								showLfoWaveform(selectedLfo);
 								break;
 							case 6:
 							case 7:
@@ -1223,6 +1235,12 @@ void HandleControlChange(byte channel, byte number, byte val) {
 						arpMode = ArpMode(val - 85);
 						showArpMode();
 						resetVoices();
+					} else if ((val >= 93) && (val <= 101)) {
+						byte selectedLfo = (val - 93) / 3;
+						byte noisetableLength = (val - 93) % 3;
+						lfoShape[selectedLfo] = kRandom;
+						noiseTableLength[selectedLfo] = 3 + noisetableLength; // 1 << 3, 1 << 4, 1 << 5 = 8, 16, 32
+						showLfoWaveform(selectedLfo);
 					} else {
 						switch (val) {
 							case 48:
@@ -1552,7 +1570,7 @@ void dumpPreset() {
 	sendCCForce(78, 50 + (fmBase[30] >> 6));  // op4 rate scaling
 	sendCCForce(70, 56 + arpClockEnable);     // arp clock on/off
 	sendCCForce(70, 65 + vibratoClockEnable); // vibrato clock on/off
-	sendCCForce(78, 85 + arpMode);
+	sendCCForce(70, 85 + arpMode);
 
 	for (int i = 0; i < 3; i++) {
 		byte shape = lfoShape[i];

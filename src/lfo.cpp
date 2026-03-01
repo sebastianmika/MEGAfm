@@ -44,10 +44,10 @@ void lfoBlink() {
 	// called when lfo resets to blink the LED
 	if ((mpe && selectedLfo < 2) || (!mpe && !lfoAt)) {
 		if ((!bankCounter) && (!showSSEGCounter)) {
-			ledSet(16 + lfoShape[selectedLfo], 0);
+			ledSet(LED_SQUARE + lfoShape[selectedLfo], 0);
 			if (lfoLedCounter < 15) {
 				lfoLedCounter = 15;
-				ledSet(16 + lfoShape[selectedLfo], 0);
+				ledSet(LED_SQUARE + lfoShape[selectedLfo], 0);
 			}
 		}
 	}
@@ -195,7 +195,7 @@ void fillRandomLfo(byte number) {
 	}
 }
 
-void lfoLedOn() { ledSet(16 + lfoShape[selectedLfo], 1); }
+void lfoLedOn() { ledSet(LED_SQUARE + lfoShape[selectedLfo], 1); }
 
 void fillAllLfoTables() {
 	for (int i = 0; i < 32; i++) {

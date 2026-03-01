@@ -26,5 +26,6 @@ enum Button : uint8_t {
  */
 void buttChanged(Button number, bool value);
 void showArpMode();
+void showLfoWaveform(byte selectedLfo);
 
 #endif // MEGAFM_CMAKE_BUTTONS_H

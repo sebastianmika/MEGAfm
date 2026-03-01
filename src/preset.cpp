@@ -379,9 +379,9 @@ void loadPreset() {
 	}
 
 	if ((arpMode) && (!mpe)) {
-		ledSet(23, 1);
+		ledSet(LED_ARP_MODE, 1);
 	} else {
-		ledSet(23, 0);
+		ledSet(LED_ARP_MODE, 0);
 	}
 	//
 

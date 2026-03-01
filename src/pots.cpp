@@ -17,9 +17,9 @@ void movedPot(byte number, byte data, bool isMidi) {
 		if ((!seqRec) && (!sendReceive)) {
 			if (setupMode) {
 
-				ledSet(10, 0);
-				ledSet(11, 0);
-				ledSet(12, 0);
+				ledSet(LED_VOICE_MODE_WIDE6, 0);
+				ledSet(LED_VOICE_MODE_DUALCH3, 0);
+				ledSet(LED_VOICE_MODE_UNISON, 0);
 
 				switch (number) {
 
@@ -86,7 +86,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 							digit(0, 0);
 							digit(1, 19);
 						} else {
-							ledSet(9, 0);
 							vibratoClockEnable = 0;
 							digit(0, 0);
 							digit(1, 12);

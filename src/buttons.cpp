@@ -121,6 +121,7 @@ void showArpMode() {
 	} else {
 		ledSet(LED_ARP_MODE, 0);
 	}
+	lastNumber = -1;
 	showPresetNumberTimeout = 12000;
 }
 
@@ -188,6 +189,7 @@ void showLfoWaveform(byte selectedLfo) {
 			break;
 	}
 
+	lastNumber = -1;
 	showPresetNumberTimeout = 12000;
 }
 

@@ -312,7 +312,6 @@ void showSendReceive() {
 	}
 }
 
-int lastValue;
 void ledNumber(int value) {
 
 	if (!displayFreeze && !sendReceive) {
@@ -344,7 +343,6 @@ void ledNumber(int value) {
 		}
 	}
 	showPresetNumberTimeout = 12000;
-	lastValue = value;
 }
 
 void ledNumberForced(int value) {

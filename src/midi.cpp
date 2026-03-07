@@ -821,6 +821,7 @@ void showOnOff(bool on) {
 		digit(0, 0);
 		digit(1, 12);
 	}
+	lastNumber = -1;
 	showPresetNumberTimeout = 12000;
 }
 

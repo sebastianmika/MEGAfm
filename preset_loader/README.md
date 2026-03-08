@@ -66,6 +66,34 @@ The module exports these dictionaries for mapping numeric values to names:
 - `LFO_SHAPES` — 0: Square, 1: Inv Square, 2: Triangle, 3: Saw, 4: Inv Saw, 5: Random Inf, 6-8: Random 8/16/32
 - `ENVELOPE_MODES` — 0: Off, 1: Forward, 2: Ping Pong
 
+## Sending presets via MIDI
+
+`send_presets.py` loads `factory_presets.csv` and sends each preset as MIDI CC messages.
+
+```bash
+# List available MIDI ports
+python send_presets.py --list-ports
+
+# Send all presets to a specific port on channel 0
+python send_presets.py --port "MEGAfm" --channel 0
+
+# Send specific presets
+python send_presets.py --port 0 --presets 0,5,12
+
+# Adjust timing (ms between CCs / ms between presets)
+python send_presets.py --port 0 --delay 10 --preset-delay 1000
+```
+
+Options:
+- `--csv` — CSV file path (default: `factory_presets.csv`)
+- `--port` — MIDI port name or index (interactive if omitted)
+- `--channel` — MIDI channel 0-15 (default: 0)
+- `--delay` — ms between individual CC messages (default: 5)
+- `--preset-delay` — ms between presets (default: 500)
+- `--presets` — comma-separated preset numbers to send (default: all)
+
+The script parses column headers (`CC{num}+{name}+({range})`) to determine which CC to send and how to convert values. Columns with `CC-1` or `Name` in the header are skipped.
+
 ## Byte accounting
 
 Each preset occupies 79 bytes. 78 are used, 1 is padding. See `BYTE_ACCOUNTING` in the script or run it for full documentation. Key points:

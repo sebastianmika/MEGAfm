@@ -12,7 +12,6 @@ void handleProgramChange(byte channel, byte program);
 void sendCC(byte number, int value);
 void sendMidiButt(byte number, int value);
 void HandleControlChange(byte channel, byte number, byte val);
-void midiOut(byte note);
 void pedalUp();
 void pedalDown();
 void dumpPreset();

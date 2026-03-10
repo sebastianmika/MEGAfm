@@ -12,6 +12,7 @@
 #include "buttons.h"
 #include "midi_pedal.hpp"
 #include "FM.h"
+#include "ISR.h"
 
 static byte voiceSlot;
 static bool ch3Alt;
@@ -731,6 +732,14 @@ void sendCC(byte number, int value) {
 	}
 }
 
+void sendNRPN(int msg, int value) {
+	rightDot();
+	sendControlChange(99, msg >> 7, masterChannelOut); // NRPN MSB
+	sendControlChange(98, msg & 0x7F, masterChannelOut); // NRPN LSB
+	sendControlChange(6, value >> 7, masterChannelOut); // Data Entry MSB
+	sendControlChange(38, value & 0x7F, masterChannelOut); // Data Entry LSB
+}
+
 void sendMidiButt(byte number, int value) {
 	rightDot();
 	sendCC(number, value);
@@ -846,6 +855,107 @@ void setOperatorEnvelopeMode(byte op, kEnvelopeMode mode) {
 			break;
 	}
 }
+void setLFOParameter(int lfo, int value) {
+	if (value < 9) {
+		switch (value) {
+			case 0:
+				// square
+				invertedSquare[lfo] = false;
+				lfoShape[lfo] = kSquare;
+				break;
+			case 1:
+				// inverted square
+				invertedSquare[lfo] = true;
+				lfoShape[lfo] = kSquare;
+				break;
+			case 2:
+				// triangle
+				lfoShape[lfo] = kTriangle;
+				break;
+			case 3:
+				// saw
+				invertedSaw[lfo] = false;
+				lfoShape[lfo] = kSaw;
+				break;
+			case 4:
+				// inverted saw
+				invertedSaw[lfo] = true;
+				lfoShape[lfo] = kSaw;
+				break;
+			case 5:
+				// random
+				lfoShape[lfo] = kRandom;
+				noiseTableLength[lfo] = 2;
+				break;
+			case 6:
+				lfoShape[lfo] = kRandom;
+				noiseTableLength[lfo] = 8;
+			case 7:
+				lfoShape[lfo] = kRandom;
+				noiseTableLength[lfo] = 16;
+			case 8:
+				lfoShape[lfo] = kRandom;
+				noiseTableLength[lfo] = 32;
+		}
+		showLfoWaveform(lfo);
+	} else {
+		switch (value) {
+			case 100:
+			case 101:
+				// retrig on/off
+				retrig[lfo] = (value == 101);
+				break;
+			case 200:
+			case 201:
+				// loop on/off
+				looping[lfo] = (value == 201);
+				break;
+			case 300:
+			case 301:
+				// midi sync off
+				lfoClockEnable[lfo] = (value == 301);
+				switch (lfo) {
+					case 0:
+						setLFO1Clock();
+						break;
+					case 1:
+						setLFO2Clock();
+						break;
+					case 2:
+						setLFO3Clock();
+						break;
+				}
+				showOnOff(value == 301);
+				break;
+			case 400:
+			case 401:
+				switch (lfo) {
+					case 0:
+						// lfo 1 velocity midi off
+						lfoVel = (value == 401);
+						setLFO1Vel();
+						break;
+					case 1:
+						// lfo 2 mod wheel midi off
+						lfoMod = (value == 401);
+						setLFO2Mod();
+						break;
+					case 2:
+						// lfo 3 aftertouch midi off
+						lfoAt = (value == 401);
+						setLFO3Aftertouch();
+						break;
+				}
+				// digit(0, 0);
+				showOnOff(value == 401);
+				lastLfoSetting[lfo] = (value == 401);
+				break;
+		}
+	}
+	selectedLfo = (byte) lfo;
+	lfoLedOn();
+	showLfo();
+}
 
 kEnvelopeMode getOperatorEnvelopeMode(byte op) {
 	if (bitRead(SSEG[op], 1)) {
@@ -857,6 +967,340 @@ kEnvelopeMode getOperatorEnvelopeMode(byte op) {
 	}
 	return kEnvelopeOff;
 }
+
+int nrpn_msg = 0;
+int nrpn_data = 0;
+byte nrpn_state = 0;
+
+void handleNRPN(int msg, int int_val) {	
+	// NRPN values are sent as 14 bit values, but we only mostly only use the lower 8 bits 
+	byte byte_val = (byte) int_val;
+	bool bool_val = (int_val > 0);
+
+	if ((msg >= 100) && (msg <= 102)) {
+		setLFOParameter(msg - 100, byte_val);
+	} else if (msg == 200) {
+		// Set brightness (0-15)
+		if (byte_val < 16)
+			setBrightness(byte_val);
+	} else if (msg == 201) {
+		// Set MIDI thru (0 = off, >0 = on)
+		thru = bool_val;
+		setThru();
+		showOnOff(thru);
+	} else if (msg == 202) {
+		// Set Pickup Mide (0 = off, >0 = on)
+		pickupMode = bool_val;
+		setPickupMode();
+		showOnOff(pickupMode);
+	} else if (msg == 203) {
+		// Set Stereo Channel 3 Mode (0 = off, >0 = on)
+		stereoCh3 = bool_val;
+		setStereoCh3();
+		showOnOff(stereoCh3);
+	} else if (msg == 204) {
+		// Set MPE Mode (0 = off, >0 = on)
+		mpe = bool_val;
+		setMPEMode();
+		showOnOff(mpe);
+	} else if (msg == 205) {
+		// Set Fat Spread Mode (0 = off, >0 = on)
+		fatSpreadMode = bool_val;
+		setFatSpreadMode();
+		showOnOff(fatSpreadMode);
+	} else if (msg == 206) {
+		// Set Ignore Preset Volume (0 = off, >0 = on)
+		ignoreVolume = bool_val;
+		setIgnoreVolume();
+		showOnOff(ignoreVolume);
+	} else if (msg == 207) {
+		// Set Fat Mode (0 = semitone, >0 = octave)
+		digit(0, 1);
+		if (bool_val) {
+			fatMode = FAT_MODE_SEMITONE;
+			digit(1, 5);
+		} else {
+			fatMode = FAT_MODE_OCTAVE;
+			digit(1, 27);
+		}
+		setFatMode();
+	} else if (msg == 208) {
+		// Set Voice Mode (0-5 = (Poly12, Wide6, DualCh3, Unison, Wide4, Wide3)
+		if (byte_val <= 5) {
+			if (!mpe) {
+				voiceMode = VoiceMode(byte_val);
+				showVoiceMode(voiceMode);
+				resetVoices();
+			}
+		}
+	} else if (msg == 209) {
+		// Set octave offset (0-3)
+		if (byte_val < 4) {
+			octOffset = byte_val;
+			ledNumber(octOffset);
+		}
+	} else if (msg == 210) {
+		// Set rate scaling for operators 1 (0-3)
+		// if (byte_val < 4) {
+		// 	updateFMifNecessary(3);
+		// 	fmBase[3] = byte_val << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
+		// 	ledNumber(byte_val);
+		// }
+		loopHeld = true;
+		movedPot(FADER_DETUNE_1, byte_val, 1);
+		loopHeld = false;
+	} else if (msg == 211) {
+		// Set rate scaling for operators 2 (0-3)
+		// if (byte_val < 4) {
+		// 	updateFMifNecessary(12);
+		// 	fmBase[12] = byte_val << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
+		// 	ledNumber(byte_val);
+		// }
+		loopHeld = true;
+		movedPot(FADER_DETUNE_2, byte_val, 1);
+		loopHeld = false;
+	} else if (msg == 212) {
+		// Set rate scaling for operators 3 (0-3)
+		// if (byte_val < 4) {
+		// 	updateFMifNecessary(21);
+		// 	fmBase[21] = byte_val << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
+		// 	ledNumber(byte_val);
+		// }
+		loopHeld = true;
+		movedPot(FADER_DETUNE_3, byte_val, 1);
+		loopHeld = false;
+	} else if (msg == 213) {
+		// Set rate scaling for operators 4 (0-3)
+		// if (byte_val < 4) {
+		// 	updateFMifNecessary(30);
+		// 	fmBase[30] = byte_val << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
+		// 	ledNumber(byte_val);
+		// }
+		loopHeld = true;
+		movedPot(FADER_DETUNE_4, byte_val, 1);
+		loopHeld = false;
+	} else if (msg == 214) {
+		// Set envelope mode for operator 1, 0-2 = (off, forward, ping pong)
+		if (byte_val < 3) {
+			setOperatorEnvelopeMode(0, kEnvelopeMode(byte_val));
+		}
+	} else if (msg == 215) {
+		// Set envelope mode for operator 2, 0-2 = (off, forward, ping pong)
+		if (byte_val < 3) {
+			setOperatorEnvelopeMode(1, kEnvelopeMode(byte_val));
+		}
+	} else if (msg == 216) {
+		// Set envelope mode for operator 3, 0-2 = (off, forward, ping pong)
+		if (byte_val < 3) {
+			setOperatorEnvelopeMode(2, kEnvelopeMode(byte_val));
+		}
+	} else if (msg == 217) {
+		// Set envelope mode for operator 4, 0-3 = (off, forward, ping pong)
+		if (byte_val < 3) {
+			setOperatorEnvelopeMode(3, kEnvelopeMode(byte_val));
+		}
+	} else if (msg == 220) {
+		// Set Fine (0-255)
+		// fine = byte_val;
+		// updateFine();
+		// if (fine > 127) {
+		// 	ledNumber(map(fine, 128, 255, 0, 32));
+		// } else if (fine < 128) {
+		// 	ledNumber(map(fine, 128, 0, 0, 32));
+		// }
+		voiceHeld = true;
+		movedPot(KNOB_VOLUME, byte_val, 1);
+		voiceHeld = false;
+	} else if (msg == 221) {
+		// Set glide (0-15)
+		// if (byte_val < 16) {
+		// 	glide = byte_val >> 3;
+		// 	updateGlideIncrements();
+		// 	ledNumber(byte_val);
+		// }
+		voiceHeld = true;
+		movedPot(KNOB_FAT, byte_val, 1);
+		voiceHeld = false;
+	}
+	else if (msg == 300) {
+		if (byte_val < 8) {
+			arpMode = ArpMode(byte_val);
+			showArpMode();
+			resetVoices();
+		}
+	} else if (msg == 301) {
+		arpClockEnable = bool_val;
+		setArpClock();
+		showOnOff(arpClockEnable);
+	} else if (msg == 400) {
+		notePriority = byte_val;
+		setNotePriority();
+	} else if (msg == 501) {
+		vibratoClockEnable = bool_val;
+		setVibratoClock();
+		showOnOff(vibratoClockEnable);
+	} else if ((msg >= 1000) &&  (msg <= 1002)) {
+		// Link LFO to target
+		// msg 1000 = LFO1, 1001 = LFO2, 1002 = LFO3
+		//
+		// bit 0 = linked if 1 else unlinked
+		// bit 1-7 = target pot (0-50)
+		//
+		// Example:
+		// val is even (0, 2, 4, ...): not linked
+		// val is odd (1, 3, 5, ...): linked
+		// val is 0 or 1: target pot 0
+		// val is 2 or 3: target pot 1
+		//
+		// So to link to pot 10, val should be 21 (10*2 + 1) and to unlink it val should be 20 (10*2 + 0)12
+		byte lfo = msg - 1000;
+		bool isLinked = bitRead(byte_val, 0);
+		byte targetPot = byte_val >> 1;
+		if (targetPot < 51) {
+			linked[lfo][targetPot] = isLinked;
+			showLink();
+		}
+	} else if (msg == 2000) {
+		// Operator 1 Detune
+		movedPot(FADER_DETUNE_1, byte_val, 1);
+	} else if (msg == 2001) {
+		// Operator 1 Multiplier
+		movedPot(FADER_MULT_1, byte_val, 1);
+	} else if (msg == 2002) {
+		// Operator 1 Level
+		movedPot(FADER_LEVEL_1, byte_val, 1);
+	} else if (msg == 2003) {
+		// Operator 1 Attack
+		movedPot(FADER_ATTACK_1, byte_val, 1);
+	} else if (msg == 2004) {
+		// Operator 1 Decay Rate
+		movedPot(FADER_DECAY_1, byte_val, 1);
+	} else if (msg == 2005) {
+		// Operator 1 Sustain Level
+		movedPot(FADER_SUSTAIN_1, byte_val, 1);
+	} else if (msg == 2006) {
+		// Operator 1 Sustain Rate
+		movedPot(FADER_SUSTAIN_RATE_1, byte_val, 1);
+	} else if (msg == 2007) {
+		// Operator 1 Release Rate
+		movedPot(FADER_RELEASE_1, byte_val, 1);
+	} else if (msg == 3000) {
+		// Operator 2 Detune
+		movedPot(FADER_DETUNE_2, byte_val, 1);
+	} else if (msg == 3001) {
+		// Operator 2 Multiplier
+		movedPot(FADER_MULT_2, byte_val, 1);
+	} else if (msg == 3002) {
+		// Operator 2 Level
+		movedPot(FADER_LEVEL_2, byte_val, 1);
+	} else if (msg == 3003) {
+		// Operator 2 Attack
+		movedPot(FADER_ATTACK_2, byte_val, 1);
+	} else if (msg == 3004) {
+		// Operator 2 Decay Rate
+		movedPot(FADER_DECAY_2, byte_val, 1);
+	} else if (msg == 3005) {
+		// Operator 2 Sustain Level
+		movedPot(FADER_SUSTAIN_2, byte_val, 1);
+	} else if (msg == 3006) {
+		// Operator 2 Sustain Rate
+		movedPot(FADER_SUSTAIN_RATE_2, byte_val, 1);
+	} else if (msg == 3007) {
+		// Operator 2 Release Rate
+		movedPot(FADER_RELEASE_2, byte_val, 1);
+	} else if (msg == 4000) {
+		// Operator 3 Detune
+		movedPot(FADER_DETUNE_3, byte_val, 1);
+	} else if (msg == 4001) {
+		// Operator 3 Multiplier
+		movedPot(FADER_MULT_3, byte_val, 1);
+	} else if (msg == 4002) {
+		// Operator 3 Level
+		movedPot(FADER_LEVEL_3, byte_val, 1);
+	} else if (msg == 4003) {
+		// Operator 3 Attack
+		movedPot(FADER_ATTACK_3, byte_val, 1);
+	} else if (msg == 4004) {
+		// Operator 3 Decay Rate
+		movedPot(FADER_DECAY_3, byte_val, 1);
+	} else if (msg == 4005) {
+		// Operator 3 Sustain Level
+		movedPot(FADER_SUSTAIN_3, byte_val, 1);
+	} else if (msg == 4006) {
+		// Operator 3 Sustain Rate
+		movedPot(FADER_SUSTAIN_RATE_3, byte_val, 1);
+	} else if (msg == 4007) {
+		// Operator 3 Release Rate
+		movedPot(FADER_RELEASE_3, byte_val, 1);
+	} else if (msg == 5000) {
+		// Operator 4 Detune
+		movedPot(FADER_DETUNE_4, byte_val, 1);
+	} else if (msg == 5001) {
+		// Operator 4 Multiplier
+		movedPot(FADER_MULT_4, byte_val, 1);
+	} else if (msg == 5002) {
+		// Operator 4 Level
+		movedPot(FADER_LEVEL_4, byte_val, 1);
+	} else if (msg == 5003) {
+		// Operator 4 Attack
+		movedPot(FADER_ATTACK_4, byte_val, 1);
+	} else if (msg == 5004) {
+		// Operator 4 Decay Rate
+		movedPot(FADER_DECAY_4, byte_val, 1);
+	} else if (msg == 5005) {
+		// Operator 4 Sustain Level
+		movedPot(FADER_SUSTAIN_4, byte_val, 1);
+	} else if (msg == 5006) {
+		// Operator 4 Sustain Rate
+		movedPot(FADER_SUSTAIN_RATE_4, byte_val, 1);
+	} else if (msg == 5007) {
+		// Operator 4 Release Rate
+		movedPot(FADER_RELEASE_4, byte_val, 1);
+	} else if (msg == 6000) {
+		// Arp Rate
+		movedPot(KNOB_ARP_RATE, byte_val, 1);
+	} else if (msg == 6001) {
+		// Arp Range
+		movedPot(KNOB_ARP_RANGE, byte_val, 1);
+	} else if (msg == 6002) {
+		// LFO 1 Rate
+		movedPot(KNOB_LFO1_RATE, byte_val, 1);
+	} else if (msg == 6003) {
+		// LFO 2 Rate
+		movedPot(KNOB_LFO2_RATE, byte_val, 1);
+	} else if (msg == 6004) {
+		// LFO 3 Rate
+		movedPot(KNOB_LFO3_RATE, byte_val, 1);
+	} else if (msg == 6005) {
+		// LFO 1 Depth
+		movedPot(KNOB_LFO1_DEPTH, byte_val, 1);
+	} else if (msg == 6006) {
+		// LFO 2 Depth
+		movedPot(KNOB_LFO2_DEPTH, byte_val, 1);
+	} else if (msg == 6007) {
+		// LFO 3 Depth
+		movedPot(KNOB_LFO3_DEPTH, byte_val, 1);
+	} else if (msg == 6008) {
+		// Vibrato Rate
+		movedPot(KNOB_VIB_RATE, byte_val, 1);
+	} else if (msg == 6009) {
+		// Vibrato Depth
+		movedPot(KNOB_VIB_DEPTH, byte_val, 1);
+	} else if (msg == 6010) {
+		// Fat
+		movedPot(KNOB_FAT, byte_val, 1);
+	} else if (msg == 6011) {
+		// Volume
+		movedPot(KNOB_VOLUME, byte_val, 1);
+	} else if (msg == 6012) {
+		// Feedback
+		movedPot(KNOB_FEEDBACK, byte_val, 1);
+	} else if (msg == 6013) {
+		// Algorithm
+		movedPot(KNOB_ALGO, byte_val, 1);
+	}
+}
+
 
 void HandleControlChange(byte channel, byte number, byte val) {
 	byte temp;
@@ -1063,7 +1507,10 @@ void HandleControlChange(byte channel, byte number, byte val) {
 		if ((lastSentCC[0] == number) && (lastSentCC[1] == val)) {
 			// ignore same CC and DATA as sent to avoid feedback
 		} else {
+			
+
 			leftDot();
+			
 			if (number == 64) {
 				if (mpe) {
 					for (int ch = 0; ch < 16; ch++)
@@ -1081,12 +1528,6 @@ void HandleControlChange(byte channel, byte number, byte val) {
 							handleProgramChange(inputChannel, preset);
 						}
 					}
-				} else if (number == 50) {
-					movedPot(0, val << 1, 1);
-				} else if (number == 51) {
-					movedPot(7, val << 1, 1);
-				} else if (number == 49) {
-					movedPot(8, val << 1, 1);
 				} else if (number == 1) { // Modulation
 					if (lfoMod) {
 						if (fmBase[38]) {
@@ -1098,352 +1539,41 @@ void HandleControlChange(byte channel, byte number, byte val) {
 							applyLfo();
 						}
 					}
-				} else if (number == 7) {
-					if (kAllCC) {
-						// Volume - scale to 0-255
-						movedPot(1, val << 1, 1);
-					}
-				} else if (number == 64) {
-					pedal_adapter.set_pedal(channel, val >= 64);
-					// if (val > 63) {
-					//	pedalDown();
-					// } else {
-					//	pedalUp();
-					// }
-				} else if (number == 70) {
-					/*
-					                                Lfo1	Lfo2	Lfo3
-					    Square						00		16		32
-					    InvSquare					01		17		33
-					    Tri							02		18		34
-					    Saw							03		19		35
-					    InvSaw						04		20		36
-					    Random inf					05		21		37
-
-					    Retriger Off				06		22		38
-					    Retriger On					07		23		39
-					    Loop Off					08		24		40
-					    Loop On 					09		25		41
-
-					    Midi Sync Off				10		26		42
-					    Midi Sync On				11		27		43
-					    Midi X Off					12		28		44
-					    Midi X On					13		29		45
-
-					    unused						14		30		46
-					    unused						15		31		47
-					    -----------------------------------------------------
-					    Midi Thru Off				48
-					    Midi Thru On				49
-					    Param Pickup Off			50
-					    Param Pickup On				51
-					    Ch3 Modo					52
-					    Ch3 Duo						53
-
-					    MPE Off						54
-					    MPE On						55
-
-					    Arp Midi Sync Off			56
-					    Arp Midi Sync On			57
-
-					    Read Vol Off				58
-					    Read Vol On					59
-
-					    Note Prio Low				60
-					    Note Prio High				61
-					    Note Prio Last				62
-
-					    Fat Mode Range Semi			63
-					    Fat Mode Range Octave		64
-
-					    Vibrato Midi Sync Off		65
-					    Vibrato Midi Sync On		66
-
-					    Fat Spread Mode Up/Down		67
-					    Fat Spread Mode Up/Up		68
-
-					    LED Brightness				69 - 84
-
-					    Arp Mode 0-7				85 - 92 (off, up, down, up/down, rnd1, rnd2, seq1, seq2)
-
-					    // Added later - see other lfo shapes above
-					    Random 8					93		96		99
-					    Random 16					94		97		100
-					    Random 32					95		98		101
-
-					*/
-					if (val <= 47) {
-						byte selectedLfo = val / 16;
-						byte action = val % 16;
-						switch (action) {
-							case 0:
-								// square
-								invertedSquare[selectedLfo] = false;
-								lfoShape[selectedLfo] = kSquare;
-								showLfoWaveform(selectedLfo);
-								break;
-							case 1:
-								// inverted square
-								invertedSquare[selectedLfo] = true;
-								lfoShape[selectedLfo] = kSquare;
-								showLfoWaveform(selectedLfo);
-								break;
-							case 2:
-								// triangle
-								lfoShape[selectedLfo] = kTriangle;
-								showLfoWaveform(selectedLfo);
-								break;
-							case 3:
-								// saw
-								invertedSaw[selectedLfo] = false;
-								lfoShape[selectedLfo] = kSaw;
-								showLfoWaveform(selectedLfo);
-								break;
-							case 4:
-								// inverted saw
-								invertedSaw[selectedLfo] = true;
-								lfoShape[selectedLfo] = kSaw;
-								showLfoWaveform(selectedLfo);
-								break;
-							case 5:
-								// random
-								lfoShape[selectedLfo] = kRandom;
-								noiseTableLength[selectedLfo] = 2;
-								showLfoWaveform(selectedLfo);
-								break;
-							case 6:
-							case 7:
-								// retrig on/off
-								retrig[selectedLfo] = (action == 7);
-								break;
-							case 8:
-							case 9:
-								// loop on/off
-								looping[selectedLfo] = (action == 9);
-								break;
-							case 10:
-							case 11:
-								// midi sync off
-								lfoClockEnable[selectedLfo] = (action == 11);
-								switch (selectedLfo) {
-									case 0:
-										setLFO1Clock();
-										break;
-									case 1:
-										setLFO2Clock();
-										break;
-									case 2:
-										setLFO3Clock();
-										break;
-								}
-								showOnOff(action == 11);
-								break;
-							case 12:
-							case 13:
-								switch (selectedLfo) {
-									case 0:
-										// lfo 1 velocity midi off
-										lfoVel = (action == 13);
-										setLFO1Vel();
-										break;
-									case 1:
-										// lfo 2 mod wheel midi off
-										lfoMod = (action == 13);
-										setLFO2Mod();
-										break;
-									case 2:
-										// lfo 3 aftertouch midi off
-										lfoAt = (action == 13);
-										setLFO3Aftertouch();
-										break;
-								}
-								// digit(0, 0);
-								showOnOff(action == 13);
-								lastLfoSetting[selectedLfo] = (action == 13);
-								break;
-							case 14:
-							case 15:
-								// unused
-								break;
-						}
-						lfoLedOn();
-						showLfo();
-					} else if ((val >= 69) && (val <= 84)) {
-						setBrightness(val - 69);
-					} else if ((val >= 85) && (val <= 92)) {
-						arpMode = ArpMode(val - 85);
-						showArpMode();
-						resetVoices();
-					} else if ((val >= 93) && (val <= 101)) {
-						byte selectedLfo = (val - 93) / 3;
-						byte noisetableLength = (val - 93) % 3;
-						lfoShape[selectedLfo] = kRandom;
-						noiseTableLength[selectedLfo] = 3 + noisetableLength; // 1 << 3, 1 << 4, 1 << 5 = 8, 16, 32
-						showLfoWaveform(selectedLfo);
-					} else {
-						switch (val) {
-							case 48:
-							case 49:
-								thru = (val == 49);
-								setThru();
-								showOnOff(val == 49);
-								break;
-							case 50:
-							case 51:
-								pickupMode = (val == 51);
-								setPickupMode();
-								showOnOff(val == 51);
-								break;
-							case 52:
-							case 53:
-								stereoCh3 = (val == 53);
-								setStereoCh3();
-								showOnOff(val == 53);
-								break;
-							case 54:
-							case 55:
-								mpe = (val == 55);
-								setMPEMode();
-								showOnOff(val == 55);
-								break;
-							case 56:
-							case 57:
-								arpClockEnable = (val == 57);
-								setArpClock();
-								showOnOff(val == 57);
-								break;
-							case 58:
-							case 59:
-								ignoreVolume = (val == 59);
-								setIgnoreVolume();
-								showOnOff(val == 59);
-								break;
-							case 60:
-								notePriority = NOTE_PRIORITY_LOWEST;
-								setNotePriority();
-								break;
-							case 61:
-								notePriority = NOTE_PRIORITY_HIGHEST;
-								setNotePriority();
-								break;
-							case 62:
-								notePriority = NOTE_PRIORITY_LAST;
-								setNotePriority();
-								break;
-							case 63:
-							case 64:
-								if (val == 63)
-									fatMode = FAT_MODE_SEMITONE;
-								else
-									fatMode = FAT_MODE_OCTAVE;
-								setFatMode();
-								digit(0, 1);
-								if (val == 63)
-									digit(1, 5);
-								else
-									digit(1, 27);
-								break;
-							case 65:
-							case 66:
-								vibratoClockEnable = (val == 66);
-								setVibratoClock();
-								showOnOff(val == 66);
-								break;
-							case 67:
-							case 68:
-								fatSpreadMode = (val == 68);
-								setFatSpreadMode();
-								showOnOff(val == 68);
-								break;
-						}
-					}
-				} else if ((number >= 71) && (number <= 73)) {
-					// Link LFO to target
-					// CC 71 = LFO1, CC72 = LFO2, CC73 = LFO3
-					//
-					// bit 0 = linked if 1 else unlinked
-					// bit 1-7 = target pot (0-50)
-					//
-					// Example:
-					// val is even (0, 2, 4, ...): not linked
-					// val is odd (1, 3, 5, ...): linked
-					// val is 0 or 1: target pot 0
-					// val is 2 or 3: target pot 1
-					//
-					// So to link to pot 10, val should be 21 (10*2 + 1) and to unlink it val should be 20 (10*2 + 0)12
-
-					byte selectedLfo = number - 71;
-					bool isLinked = bitRead(val, 0);
-					byte targetPot = val >> 1;
-					if (targetPot < 51) {
-						linked[selectedLfo][targetPot] = isLinked;
-						showLink();
-					}
-				} else if (number == 78) {
-					// Set voice mode (0-5)
-					// Set octave offset (10-13 --> 0-3)
-					// Set rate scaling, envelope
-					//   * op1: 20-23 (0-3), 25-27 (off, forward, ping pong)
-					//   * op2: 30-33 (0-3), 35-37 (off, forward, ping pong)
-					//   * op3: 40-43 (0-3), 45-47 (off, forward, ping pong)
-					//   * op4: 50-53 (0-3), 55-57 (off, forward, ping pong)
-					if (val <= 5) {
-						if (!mpe) {
-							voiceMode = VoiceMode(val);
-							showVoiceMode(voiceMode);
-							resetVoices();
-						}
-					} else if (val >= 10 && val <= 13) {
-						octOffset = val - 10;
-						ledNumber(octOffset);
-					} else if (val >= 20 && val <= 23) {
-						// Set rate scaling for operators 1
-						updateFMifNecessary(3);
-						fmBase[3] = (val - 20) << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
-						ledNumber(val - 20);
-					} else if (val >= 25 && val <= 27) {
-						setOperatorEnvelopeMode(0, kEnvelopeMode(val - 25));
-					} else if (val >= 30 && val <= 33) {
-						// Set rate scaling for operators 2
-						updateFMifNecessary(12);
-						fmBase[12] = (val - 30) << 6;
-						ledNumber(val - 30);
-					} else if (val >= 35 && val <= 37) {
-						setOperatorEnvelopeMode(1, kEnvelopeMode(val - 35));
-					} else if (val >= 40 && val <= 43) {
-						// Set rate scaling for operators 3
-						updateFMifNecessary(21);
-						fmBase[21] = (val - 40) << 6;
-						ledNumber(val - 40);
-					} else if (val >= 45 && val <= 47) {
-						setOperatorEnvelopeMode(2, kEnvelopeMode(val - 45));
-					} else if (val >= 50 && val <= 53) {
-						// Set rate scaling for operators 4
-						updateFMifNecessary(30);
-						fmBase[30] = (val - 50) << 6;
-						ledNumber(val - 50);
-					} else if (val >= 55 && val <= 57) {
-						setOperatorEnvelopeMode(3, kEnvelopeMode(val - 55));
-					}
-				} else if (number == 75) {
-					// Set glide
-					glide = val >> 3; // 0-127 becomes 0-15
-					updateGlideIncrements();
-					ledNumber(val >> 1);
-				} else if (number == 76) {
-					fine = val << 1; // 0-127 becomes 0-254
-					updateFine();
-					if (fine > 127) {
-						ledNumber(map(fine, 128, 255, 0, 32));
-					} else if (fine < 128) {
-						ledNumber(map(fine, 128, 0, 0, 32));
-					}
+				} else if (number == 99) {
+				// NRPN BEGIN ////////////////////////////////////
+					nrpn_msg = val;
+					nrpn_state = 1;
+				} else if ((number == 98) && (nrpn_state == 1)) {
+					nrpn_msg = (nrpn_msg << 7) | val;
+					nrpn_state = 2;
+				} else if ((number == 6) && (nrpn_state == 2)) {
+					nrpn_data = val;
+					nrpn_state = 3;
+				} else if ((number == 38) && (nrpn_state == 3)) {
+					nrpn_data = (nrpn_data << 7) | val;
+					handleNRPN(nrpn_msg, nrpn_data);
+					// Handle NRPN with 14 bit message
+					nrpn_msg = 0;
+					nrpn_data = 0;
+					nrpn_state = 0;
+				// NRPN DONE //////////////////////////////////////
 				} else {
+					byte pot = number;
+					// Rewrite CC -> POT for some
+					if (number == 50)
+						pot = 0;
+					else if (number == 51)
+						pot = 7;
+					else if (number == 49)
+						pot = 8;
+					else if (number == 7)
+						pot = 1;
+
 					if (kAllCC) {
-						movedPot(number, val << 1, 1);
+						movedPot(pot, val << 1, 1);
 					} else {
-						if ((number != 19) && (number != 40) && (number != 16) && (number != 38)) {
-							movedPot(number, val << 1, 1);
+						if ((pot != 19) && (pot != 40) && (pot != 16) && (pot != 38)) {
+							movedPot(pot, val << 1, 1);
 						}
 					}
 				}
@@ -1452,13 +1582,6 @@ void HandleControlChange(byte channel, byte number, byte val) {
 		lastData1 = number;
 		lastData2 = val;
 	}
-}
-
-void midiOut(byte note) {
-	rightDot();
-	// midiB.sendNoteOff(lastNote+1,127,masterChannelOut);
-	// midiB.sendNoteOn(note+1,velocityLast,masterChannelOut);
-	lastNote = note;
 }
 
 void dumpPreset() {
@@ -1705,6 +1828,60 @@ void sendNoteOn(byte note, byte velocity, byte channel) {
 	}
 }
 
+#define MAX_SYSEX_DATA_LENGTH 2048
+int sysExDataIndex = 0;
+byte sysExData[MAX_SYSEX_DATA_LENGTH];
+
+void handleSysEx() {
+	// Do something with the data in sysExData, which has length sysExDataIndex
+
+	// Interpret the data in tuples: we treat the first byte as the CC number, and the next as value
+	// This is wasteful, but for now this just a proof of concept.
+
+
+	if (sysExDataIndex < 6) {
+		// Not enough data for even one CC; ignore
+		digit(0, 20); // -
+		digit(1, 0);
+	} else {
+		if ((sysExData[3] == 0) && (sysExData[4] == 0)) {
+			seqLength = sysExData[5];
+			// X X X 0 0 L b1 ... b2L = sequence data
+			if (sysExDataIndex != 6 + 2 * seqLength) {
+				digit(0, 20); // -
+				digit(1, 1);
+			} else {
+				for (int i = 6; i < 6 + 2 * seqLength; i += 2) {
+					seq[(i-6)/2] = sysExData[i] * 128 + sysExData[i+1]; // LSB and MSB to get 0-255 value
+				}
+				digit(0, 20); // -
+				digit(1, 2);
+			}
+		} else {
+			// not handeled
+			digit(0, 20); // -
+			digit(1, 9);
+		}
+	}
+
+	mStatus = 0;
+	sysExDataIndex = 0;
+	mData = 0;
+
+	lastNumber = -1;
+	showPresetNumberTimeout = 12000;
+}
+
+void abortSysEx() {
+	mStatus = 0;
+	sysExDataIndex = 0;
+	mData = 0;
+	digit(0, 20); // -
+	digit(1, 20); // -
+	lastNumber = -1;
+	showPresetNumberTimeout = 12000;
+}
+
 void midiRead() {
 	while (Serial.available()) {
 		byte input = Serial.read();
@@ -1715,6 +1892,12 @@ void midiRead() {
 
 		if (input > 127) {
 			// Status
+			if ((mStatus == 8) && (input == 247))  {  // input == F7
+				// In SysEx and receivd Sysex end; handle data and end sysex mode
+				handleSysEx();
+			} else if (mStatus == 8) {
+				abortSysEx();
+			}
 			switch (input) {
 				case 248:
 					handleClock();
@@ -1764,7 +1947,17 @@ void midiRead() {
 					mStatus = 4;
 					mData = 255;
 					break; // Pitch Bend
-
+				case 240:  // F0
+					// SysEx start
+					mStatus = 8;
+					mData = 0;
+					sysExDataIndex = 0;
+					digit(0, 24); // all on
+					digit(1, 21); // blank
+					break;
+				// case 247:  // F7
+				//  SysEx end; handeled above
+				// 	break;
 				default:
 					mStatus = 0;
 					mData = 255;
@@ -1805,6 +1998,8 @@ void midiRead() {
 							// handleNoteOff(mChannel, mData + midiNoteOffset);
 						}
 						mData = 255;
+
+
 						break; // noteOn
 					case 2:
 
@@ -1841,6 +2036,22 @@ void midiRead() {
 						handlePolyAT(mChannel, mData, input);
 						mData = 255;
 						break;
+					case 8:
+						if (sysExDataIndex == 3) {
+							// check if it's a SysEx message for us ( - we do the same as the firmware and take the default 
+							// from hex2sys = \x00\x21\x44 = 00 33 68)
+							if (sysExData[0] != 0 || sysExData[1] != 33 || sysExData[2] != 68) {
+								// not for us, ignore the rest of the message
+								abortSysEx();
+								break;
+							}
+						} else if (sysExDataIndex == MAX_SYSEX_DATA_LENGTH) {
+							abortSysEx();
+							break;
+						}
+						sysExData[sysExDataIndex++] = input;
+						mData = 0;
+						break; // SysEx
 					default:
 						break;
 				}

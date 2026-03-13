@@ -855,106 +855,49 @@ void setOperatorEnvelopeMode(byte op, kEnvelopeMode mode) {
 			break;
 	}
 }
-void setLFOParameter(int lfo, int value) {
-	if (value < 9) {
-		switch (value) {
-			case 0:
-				// square
-				invertedSquare[lfo] = false;
-				lfoShape[lfo] = kSquare;
-				break;
-			case 1:
-				// inverted square
-				invertedSquare[lfo] = true;
-				lfoShape[lfo] = kSquare;
-				break;
-			case 2:
-				// triangle
-				lfoShape[lfo] = kTriangle;
-				break;
-			case 3:
-				// saw
-				invertedSaw[lfo] = false;
-				lfoShape[lfo] = kSaw;
-				break;
-			case 4:
-				// inverted saw
-				invertedSaw[lfo] = true;
-				lfoShape[lfo] = kSaw;
-				break;
-			case 5:
-				// random
-				lfoShape[lfo] = kRandom;
-				noiseTableLength[lfo] = 2;
-				break;
-			case 6:
-				lfoShape[lfo] = kRandom;
-				noiseTableLength[lfo] = 8;
-			case 7:
-				lfoShape[lfo] = kRandom;
-				noiseTableLength[lfo] = 16;
-			case 8:
-				lfoShape[lfo] = kRandom;
-				noiseTableLength[lfo] = 32;
-		}
-		showLfoWaveform(lfo);
-	} else {
-		switch (value) {
-			case 100:
-			case 101:
-				// retrig on/off
-				retrig[lfo] = (value == 101);
-				break;
-			case 200:
-			case 201:
-				// loop on/off
-				looping[lfo] = (value == 201);
-				break;
-			case 300:
-			case 301:
-				// midi sync off
-				lfoClockEnable[lfo] = (value == 301);
-				switch (lfo) {
-					case 0:
-						setLFO1Clock();
-						break;
-					case 1:
-						setLFO2Clock();
-						break;
-					case 2:
-						setLFO3Clock();
-						break;
-				}
-				showOnOff(value == 301);
-				break;
-			case 400:
-			case 401:
-				switch (lfo) {
-					case 0:
-						// lfo 1 velocity midi off
-						lfoVel = (value == 401);
-						setLFO1Vel();
-						break;
-					case 1:
-						// lfo 2 mod wheel midi off
-						lfoMod = (value == 401);
-						setLFO2Mod();
-						break;
-					case 2:
-						// lfo 3 aftertouch midi off
-						lfoAt = (value == 401);
-						setLFO3Aftertouch();
-						break;
-				}
-				// digit(0, 0);
-				showOnOff(value == 401);
-				lastLfoSetting[lfo] = (value == 401);
-				break;
-		}
+
+void setLFOShape(byte lfo, byte value) {
+	switch (value) {
+		case 0:
+			// square
+			invertedSquare[lfo] = false;
+			lfoShape[lfo] = kSquare;
+			break;
+		case 1:
+			// inverted square
+			invertedSquare[lfo] = true;
+			lfoShape[lfo] = kSquare;
+			break;
+		case 2:
+			// triangle
+			lfoShape[lfo] = kTriangle;
+			break;
+		case 3:
+			// saw
+			invertedSaw[lfo] = false;
+			lfoShape[lfo] = kSaw;
+			break;
+		case 4:
+			// inverted saw
+			invertedSaw[lfo] = true;
+			lfoShape[lfo] = kSaw;
+			break;
+		case 5:
+			// random
+			lfoShape[lfo] = kRandom;
+			noiseTableLength[lfo] = 2;
+			break;
+		case 6:
+			lfoShape[lfo] = kRandom;
+			noiseTableLength[lfo] = 8;
+		case 7:
+			lfoShape[lfo] = kRandom;
+			noiseTableLength[lfo] = 16;
+		case 8:
+			lfoShape[lfo] = kRandom;
+			noiseTableLength[lfo] = 32;
 	}
-	selectedLfo = (byte) lfo;
-	lfoLedOn();
-	showLfo();
+	showLfoWaveform(lfo);
 }
 
 kEnvelopeMode getOperatorEnvelopeMode(byte op) {
@@ -977,8 +920,52 @@ void handleNRPN(int msg, int int_val) {
 	byte byte_val = (byte) int_val;
 	bool bool_val = (int_val > 0);
 
-	if ((msg >= 100) && (msg <= 102)) {
-		setLFOParameter(msg - 100, byte_val);
+	if ((msg >= 100) && (msg <= 114)) {
+		if ((msg >= 100) && (msg <= 102)) {
+			// Shape LFO1: 100, LFO2: 101, LFO3: 102
+			selectedLfo = (byte) (msg - 100);
+			setLFOShape(selectedLfo, byte_val);
+		} else if ((msg >= 103) && (msg <= 105)) {
+			// Looping LFO1: 103, LFO2: 104, LFO3: 105
+			selectedLfo = (byte) (msg - 103);
+			looping[selectedLfo] = bool_val;
+		} else if ((msg >= 106) && (msg <= 108)) {
+			// Retrig LFO1: 106, LFO2: 107, LFO3: 108
+			selectedLfo = (byte) (msg - 106);
+			retrig[selectedLfo] = bool_val;
+		} else if ((msg >= 109) && (msg <= 111)) {
+			// MIDI Sync LFO1: 109, LFO2: 110, LFO3: 111
+			selectedLfo = (byte) (msg - 109);
+			lfoClockEnable[selectedLfo] = bool_val;
+			switch (selectedLfo) {
+				case 0:
+					setLFO1Clock();
+					break;
+				case 1:
+					setLFO2Clock();
+					break;
+				case 2:
+					setLFO3Clock();
+					break;
+			}
+			showOnOff(bool_val);
+		} else if ((msg >= 112) && (msg <= 114)) {
+			selectedLfo = (byte) (msg - 112);
+			if (msg == 112) {
+				lfoVel = bool_val;
+				setLFO1Vel();
+			} else if (msg == 113) {
+				lfoMod = bool_val;
+				setLFO2Mod();
+			} else if (msg == 114) {
+				lfoAt = bool_val;
+				setLFO3Aftertouch();
+			}
+			showOnOff(bool_val);
+			lastLfoSetting[selectedLfo] = bool_val;
+		}
+		lfoLedOn();
+		showLfo();
 	} else if (msg == 200) {
 		// Set brightness (0-15)
 		if (byte_val < 16)
@@ -1039,68 +1026,8 @@ void handleNRPN(int msg, int int_val) {
 			octOffset = byte_val;
 			ledNumber(octOffset);
 		}
-	} else if (msg == 210) {
-		// Set rate scaling for operators 1 (0-3)
-		// if (byte_val < 4) {
-		// 	updateFMifNecessary(3);
-		// 	fmBase[3] = byte_val << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
-		// 	ledNumber(byte_val);
-		// }
-		loopHeld = true;
-		movedPot(FADER_DETUNE_1, byte_val, 1);
-		loopHeld = false;
-	} else if (msg == 211) {
-		// Set rate scaling for operators 2 (0-3)
-		// if (byte_val < 4) {
-		// 	updateFMifNecessary(12);
-		// 	fmBase[12] = byte_val << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
-		// 	ledNumber(byte_val);
-		// }
-		loopHeld = true;
-		movedPot(FADER_DETUNE_2, byte_val, 1);
-		loopHeld = false;
-	} else if (msg == 212) {
-		// Set rate scaling for operators 3 (0-3)
-		// if (byte_val < 4) {
-		// 	updateFMifNecessary(21);
-		// 	fmBase[21] = byte_val << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
-		// 	ledNumber(byte_val);
-		// }
-		loopHeld = true;
-		movedPot(FADER_DETUNE_3, byte_val, 1);
-		loopHeld = false;
-	} else if (msg == 213) {
-		// Set rate scaling for operators 4 (0-3)
-		// if (byte_val < 4) {
-		// 	updateFMifNecessary(30);
-		// 	fmBase[30] = byte_val << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
-		// 	ledNumber(byte_val);
-		// }
-		loopHeld = true;
-		movedPot(FADER_DETUNE_4, byte_val, 1);
-		loopHeld = false;
-	} else if (msg == 214) {
-		// Set envelope mode for operator 1, 0-2 = (off, forward, ping pong)
-		if (byte_val < 3) {
-			setOperatorEnvelopeMode(0, kEnvelopeMode(byte_val));
-		}
-	} else if (msg == 215) {
-		// Set envelope mode for operator 2, 0-2 = (off, forward, ping pong)
-		if (byte_val < 3) {
-			setOperatorEnvelopeMode(1, kEnvelopeMode(byte_val));
-		}
-	} else if (msg == 216) {
-		// Set envelope mode for operator 3, 0-2 = (off, forward, ping pong)
-		if (byte_val < 3) {
-			setOperatorEnvelopeMode(2, kEnvelopeMode(byte_val));
-		}
-	} else if (msg == 217) {
-		// Set envelope mode for operator 4, 0-3 = (off, forward, ping pong)
-		if (byte_val < 3) {
-			setOperatorEnvelopeMode(3, kEnvelopeMode(byte_val));
-		}
 	} else if (msg == 220) {
-		// Set Fine (0-255)
+		// Set Tune (0-255)
 		// fine = byte_val;
 		// updateFine();
 		// if (fine > 127) {
@@ -1121,8 +1048,40 @@ void handleNRPN(int msg, int int_val) {
 		voiceHeld = true;
 		movedPot(KNOB_FAT, byte_val, 1);
 		voiceHeld = false;
-	}
-	else if (msg == 300) {
+	}  else if (msg == 222) {
+		// LFO 1 Rate
+		movedPot(KNOB_LFO1_RATE, byte_val, 1);
+	} else if (msg == 223) {
+		// LFO 2 Rate
+		movedPot(KNOB_LFO2_RATE, byte_val, 1);
+	} else if (msg == 224) {
+		// LFO 3 Rate
+		movedPot(KNOB_LFO3_RATE, byte_val, 1);
+	} else if (msg == 225) {
+		// LFO 1 Depth
+		movedPot(KNOB_LFO1_DEPTH, byte_val, 1);
+	} else if (msg == 226) {
+		// LFO 2 Depth
+		movedPot(KNOB_LFO2_DEPTH, byte_val, 1);
+	} else if (msg == 227) {
+		// LFO 3 Depth
+		movedPot(KNOB_LFO3_DEPTH, byte_val, 1);
+	} else if (msg == 228) {
+		// Fat
+		movedPot(KNOB_FAT, byte_val, 1);
+	} else if (msg == 229) {
+		// Volume
+		movedPot(KNOB_VOLUME, byte_val, 1);
+	} else if (msg == 230) {
+		// Feedback
+		movedPot(KNOB_FEEDBACK, byte_val, 1);
+	} else if (msg == 231) {
+		// Algorithm
+		movedPot(KNOB_ALGO, byte_val, 1);
+	} else if (msg == 232) {
+		notePriority = byte_val;
+		setNotePriority();
+	} else if (msg == 300) {
 		if (byte_val < 8) {
 			arpMode = ArpMode(byte_val);
 			showArpMode();
@@ -1132,13 +1091,22 @@ void handleNRPN(int msg, int int_val) {
 		arpClockEnable = bool_val;
 		setArpClock();
 		showOnOff(arpClockEnable);
-	} else if (msg == 400) {
-		notePriority = byte_val;
-		setNotePriority();
-	} else if (msg == 501) {
+	} else if (msg == 302) {
+		// Arp Rate
+		movedPot(KNOB_ARP_RATE, byte_val, 1);
+	} else if (msg == 303) {
+		// Arp Range
+		movedPot(KNOB_ARP_RANGE, byte_val, 1);
+	} else if (msg == 500) {
 		vibratoClockEnable = bool_val;
 		setVibratoClock();
 		showOnOff(vibratoClockEnable);
+	} else if (msg == 501) {
+		// Vibrato Rate
+		movedPot(KNOB_VIB_RATE, byte_val, 1);
+	} else if (msg == 502) {
+		// Vibrato Depth
+		movedPot(KNOB_VIB_DEPTH, byte_val, 1);
 	} else if ((msg >= 1000) &&  (msg <= 1002)) {
 		// Link LFO to target
 		// msg 1000 = LFO1, 1001 = LFO2, 1002 = LFO3
@@ -1184,6 +1152,21 @@ void handleNRPN(int msg, int int_val) {
 	} else if (msg == 2007) {
 		// Operator 1 Release Rate
 		movedPot(FADER_RELEASE_1, byte_val, 1);
+	} else if (msg == 2008) {
+		// Set envelope mode for operator 1, 0-2 = (off, forward, ping pong)
+		if (byte_val < 3) {
+			setOperatorEnvelopeMode(0, kEnvelopeMode(byte_val));
+		}
+	} else if (msg == 2009) {
+		// Set rate scaling for operators 1 (0-3)
+		// if (byte_val < 4) {
+		// 	updateFMifNecessary(3);
+		// 	fmBase[3] = byte_val << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
+		// 	ledNumber(byte_val);
+		// }
+		loopHeld = true;
+		movedPot(FADER_DETUNE_1, byte_val, 1);
+		loopHeld = false;
 	} else if (msg == 3000) {
 		// Operator 2 Detune
 		movedPot(FADER_DETUNE_2, byte_val, 1);
@@ -1208,6 +1191,21 @@ void handleNRPN(int msg, int int_val) {
 	} else if (msg == 3007) {
 		// Operator 2 Release Rate
 		movedPot(FADER_RELEASE_2, byte_val, 1);
+	} else if (msg == 3008) {
+		// Set envelope mode for operator 2, 0-2 = (off, forward, ping pong)
+		if (byte_val < 3) {
+			setOperatorEnvelopeMode(1, kEnvelopeMode(byte_val));
+		}
+	} else if (msg == 3009) {
+		// Set rate scaling for operators 2 (0-3)
+		// if (byte_val < 4) {
+		// 	updateFMifNecessary(12);
+		// 	fmBase[12] = byte_val << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
+		// 	ledNumber(byte_val);
+		// }
+		loopHeld = true;
+		movedPot(FADER_DETUNE_2, byte_val, 1);
+		loopHeld = false;
 	} else if (msg == 4000) {
 		// Operator 3 Detune
 		movedPot(FADER_DETUNE_3, byte_val, 1);
@@ -1232,6 +1230,21 @@ void handleNRPN(int msg, int int_val) {
 	} else if (msg == 4007) {
 		// Operator 3 Release Rate
 		movedPot(FADER_RELEASE_3, byte_val, 1);
+	} else if (msg == 4008) {
+		// Set envelope mode for operator 3, 0-2 = (off, forward, ping pong)
+		if (byte_val < 3) {
+			setOperatorEnvelopeMode(2, kEnvelopeMode(byte_val));
+		}
+	} else if (msg == 4009) {
+		// Set rate scaling for operators 3 (0-3)
+		// if (byte_val < 4) {
+		// 	updateFMifNecessary(21);
+		// 	fmBase[21] = byte_val << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
+		// 	ledNumber(byte_val);
+		// }
+		loopHeld = true;
+		movedPot(FADER_DETUNE_3, byte_val, 1);
+		loopHeld = false;
 	} else if (msg == 5000) {
 		// Operator 4 Detune
 		movedPot(FADER_DETUNE_4, byte_val, 1);
@@ -1256,49 +1269,22 @@ void handleNRPN(int msg, int int_val) {
 	} else if (msg == 5007) {
 		// Operator 4 Release Rate
 		movedPot(FADER_RELEASE_4, byte_val, 1);
-	} else if (msg == 6000) {
-		// Arp Rate
-		movedPot(KNOB_ARP_RATE, byte_val, 1);
-	} else if (msg == 6001) {
-		// Arp Range
-		movedPot(KNOB_ARP_RANGE, byte_val, 1);
-	} else if (msg == 6002) {
-		// LFO 1 Rate
-		movedPot(KNOB_LFO1_RATE, byte_val, 1);
-	} else if (msg == 6003) {
-		// LFO 2 Rate
-		movedPot(KNOB_LFO2_RATE, byte_val, 1);
-	} else if (msg == 6004) {
-		// LFO 3 Rate
-		movedPot(KNOB_LFO3_RATE, byte_val, 1);
-	} else if (msg == 6005) {
-		// LFO 1 Depth
-		movedPot(KNOB_LFO1_DEPTH, byte_val, 1);
-	} else if (msg == 6006) {
-		// LFO 2 Depth
-		movedPot(KNOB_LFO2_DEPTH, byte_val, 1);
-	} else if (msg == 6007) {
-		// LFO 3 Depth
-		movedPot(KNOB_LFO3_DEPTH, byte_val, 1);
-	} else if (msg == 6008) {
-		// Vibrato Rate
-		movedPot(KNOB_VIB_RATE, byte_val, 1);
-	} else if (msg == 6009) {
-		// Vibrato Depth
-		movedPot(KNOB_VIB_DEPTH, byte_val, 1);
-	} else if (msg == 6010) {
-		// Fat
-		movedPot(KNOB_FAT, byte_val, 1);
-	} else if (msg == 6011) {
-		// Volume
-		movedPot(KNOB_VOLUME, byte_val, 1);
-	} else if (msg == 6012) {
-		// Feedback
-		movedPot(KNOB_FEEDBACK, byte_val, 1);
-	} else if (msg == 6013) {
-		// Algorithm
-		movedPot(KNOB_ALGO, byte_val, 1);
-	}
+	} else if (msg == 5008) {
+		// Set envelope mode for operator 4, 0-2 = (off, forward, ping pong)
+		if (byte_val < 3) {
+			setOperatorEnvelopeMode(3, kEnvelopeMode(byte_val));
+		}
+	} else if (msg == 5009) {
+		// Set rate scaling for operators 4 (0-3)
+		// if (byte_val < 4) {
+		// 	updateFMifNecessary(30);
+		// 	fmBase[30] = byte_val << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
+		// 	ledNumber(byte_val);
+		// }
+		loopHeld = true;
+		movedPot(FADER_DETUNE_4, byte_val, 1);
+		loopHeld = false;
+	} 
 }
 
 

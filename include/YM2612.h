@@ -85,14 +85,14 @@ class YM2612 {
 		           uint8_t mc_pin, uint8_t data0_pin, uint8_t data1_pin, uint8_t data2_pin, uint8_t data3_pin,
 		           uint8_t data4_pin, uint8_t data5_pin, uint8_t data6_pin, uint8_t data7_pin);
 
-		void setAmVib(byte number, int data);
-		void setPlaymode(int value);
-		void selectChannel(int value) { selected_channel = value; }
+		// void setAmVib(byte number, int data);
+		// void setPlaymode(int value);
+		// void selectChannel(int value) { selected_channel = value; }
 
 		void selectOperator(int op, int value) { operators[op] = (value > 0); }
 
 		// master params
-		void setLFO(int value);
+		// void setLFO(int value);
 		void setChan3Mode(int value) { setMasterParameter(YM_MA_CH3_M, value); }
 
 		// channel params
@@ -115,18 +115,18 @@ class YM2612 {
 		void setRateScaling(int value) { setOperatorParameter(YM_OP_RS, value); }
 		void setSSG_EG(int value) { setOperatorParameter(YM_OP_SSG_EG, value); }
 
-		void setAmplitudeModulation(int channel, int value) {
-			channel = stagger[channel];
-			if (channel > 5) {
-				channel -= 6;
-				chip = 6;
-			} else {
-				chip = 2;
-			}
+		// void setAmplitudeModulation(int channel, int value) {
+		// 	channel = stagger[channel];
+		// 	if (channel > 5) {
+		// 		channel -= 6;
+		// 		chip = 6;
+		// 	} else {
+		// 		chip = 2;
+		// 	}
 
-			setOperatorParameter(channel, YM_OP_AM, (value > 0));
-			chip = 0;
-		}
+		// 	setOperatorParameter(channel, YM_OP_AM, (value > 0));
+		// 	chip = 0;
+		// }
 		void setAttackRate(int channel, int value) {
 			channel = stagger[channel];
 			if (channel > 5) {
@@ -226,50 +226,50 @@ class YM2612 {
 			setOperatorParameter(channel, YM_OP_RS, value);
 			chip = 0;
 		}
-		void setSSG_EG(int channel, int value) {
-			channel = stagger[channel];
-			if (channel > 5) {
-				channel -= 6;
-				chip = 6;
-			} else {
-				chip = 2;
-			}
-			setOperatorParameter(channel, YM_OP_SSG_EG, value);
-			chip = 0;
-		}
+		// void setSSG_EG(int channel, int value) {
+		// 	channel = stagger[channel];
+		// 	if (channel > 5) {
+		// 		channel -= 6;
+		// 		chip = 6;
+		// 	} else {
+		// 		chip = 2;
+		// 	}
+		// 	setOperatorParameter(channel, YM_OP_SSG_EG, value);
+		// 	chip = 0;
+		// }
 
 		void noteOn(byte chan);
 		void noteOff(byte chan);
-		void pitchBend(byte channel, int bend);
-		void update();
-		void updatePitch();
+		// void pitchBend(byte channel, int bend);
+		// void update();
+		// void updatePitch();
 
-		void updateBend(float input);
-		void setFine(float input);
+		// void updateBend(float input);
+		// void setFine(float input);
 		void setFrequency3(byte op, uint8_t channel, float frequency);
 		void setFrequencySingle(uint8_t channel, float frequency);
-		void setStagger(bool data);
+		// void setStagger(bool data);
 
 	private:
 		byte chip;
-		float fat;
-		int amVib[4];
-		float bendy = 1;
+		// float fat;
+		// int amVib[4];
+		// float bendy = 1;
 		float finey = 1;
-		bool stag = true;
+		// bool stag = true;
 
 		voice_t voices[6];
-		uint8_t voices_order[6];
-		uint8_t voices_order_index = 0;
+		// uint8_t voices_order[6];
+		// uint8_t voices_order_index = 0;
 
-		LinkedList<uint8_t> notes_stack0 = LinkedList<uint8_t>();
-		LinkedList<uint8_t> voices_stack0 = LinkedList<uint8_t>();
-		LinkedList<uint8_t> notes_stack1 = LinkedList<uint8_t>();
-		LinkedList<uint8_t> voices_stack1 = LinkedList<uint8_t>();
-		uint8_t splitNote = 60;
+		// LinkedList<uint8_t> notes_stack0 = LinkedList<uint8_t>();
+		// LinkedList<uint8_t> voices_stack0 = LinkedList<uint8_t>();
+		// LinkedList<uint8_t> notes_stack1 = LinkedList<uint8_t>();
+		// LinkedList<uint8_t> voices_stack1 = LinkedList<uint8_t>();
+		// uint8_t splitNote = 60;
 		int pitchBendValue = 0;
 
-		playmode_t playmode;
+		// playmode_t playmode;
 		uint8_t selected_channel;
 		bool operators[4];
 
@@ -290,8 +290,8 @@ class YM2612 {
 		uint8_t data5_pin;
 		uint8_t data6_pin;
 		uint8_t data7_pin;
-		uint8_t channelPart();
-		uint8_t channelOffset();
+		// uint8_t channelPart();
+		// uint8_t channelOffset();
 		void sendData(uint8_t data);
 		void setRegister(uint8_t part, uint8_t reg, uint8_t data);
 		void setMasterParameter(int reg_offset, int val_size, int val_shift, int val);

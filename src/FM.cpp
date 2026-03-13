@@ -226,12 +226,12 @@ void fm(byte number, byte data) {
 		case 42:
 			if (algoLast != data) {
 				algoLast = data;
-				ym.setAlgorithm(data >> 5);
-				showAlgo(data >> 5);
+				ym.setAlgorithm(data >> fmShifts[number]);
+				showAlgo(data >> fmShifts[number]);
 			}
 			break; // algo
 		case 43:
-			ym.setFeedback(data >> 5);
+			ym.setFeedback(data >> fmShifts[number]);
 			break; // feedback
 		case 50:
 			setFat(data);

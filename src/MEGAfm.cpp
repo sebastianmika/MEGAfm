@@ -378,10 +378,9 @@ void setup() {
 		digit(0, 16);
 		digit(1, 18);
 
-		// ToDo: bring back presets
-		// for (int i = 0; i < 4000; i++) {
-		// 	EEPROM.update(i, kFactoryPresets[i]);
-		// }
+		for (int i = 0; i < 4000; i++) {
+			EEPROM.update(i, kFactoryPresets[i]);
+		}
 		clearSSEG(0);
 		EEPROM.update(3970, 0);
 		newWide = false;

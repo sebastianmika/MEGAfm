@@ -2,7 +2,7 @@
 #include <constants.h>
 #include "YM2612.h"
 
-// void YM2612::setStagger(bool data) { stag = data; }
+// void YM2612::setStagger(bool data) { stag = data; } // unused
 
 void YM2612::setup(uint8_t ic_pin, uint8_t cs_pin, uint8_t wr_pin, uint8_t rd_pin, uint8_t a0_pin, uint8_t a1_pin,
                    uint8_t mc_pin, uint8_t data0_pin, uint8_t data1_pin, uint8_t data2_pin, uint8_t data3_pin,
@@ -30,7 +30,7 @@ void YM2612::setup(uint8_t ic_pin, uint8_t cs_pin, uint8_t wr_pin, uint8_t rd_pi
 	setDefaults();
 }
 
-// void YM2612::setPlaymode(byte number, int data) { amVib[number] = data; }
+// void YM2612::setPlaymode(byte number, int data) { amVib[number] = data; } // unused
 
 void YM2612::setDefaults() {
 	selected_channel = 1;
@@ -40,7 +40,7 @@ void YM2612::setDefaults() {
 	operators[3] = true;
 
 	for (int i = 0; i < 6; i++) {
-		voices[i].on = false;
+		// voices[i].on = false;  // unused
 		keyOff(i);
 	}
 	// channel params
@@ -61,6 +61,7 @@ void YM2612::setDefaults() {
 	setDetune(3);
 }
 
+// unused
 // void YM2612::setLFO(int value) {
 // 	// mod wheel value (0..8) is used both to enable
 // 	//  and to set lfo freq
@@ -150,21 +151,22 @@ void YM2612::setOperatorParameter(int chan, int oper, int reg_offset, int val_si
 	setRegister(channel_part, YM_CHN_ADDR + reg_offset + op_offset, *(p + op_offset));
 }
 
-// void YM2612::setFine(float input) { finey = input; }
+// void YM2612::setFine(float input) { finey = input; } // unused
 
 void YM2612::noteOff(byte channel) {
-	// if (stag)
+	// if (stag) // unused
 	channel = stagger[channel];
 
 	keyOff(channel);
 }
 
 void YM2612::noteOn(byte channel) {
-	// if (stag)
+	// if (stag) // unused
 	channel = stagger[channel];
 	keyOn(channel);
 }
 
+// unused
 // void YM2612::pitchBend(byte channel, int bend) {
 // 	UNUSED(channel);
 
@@ -179,23 +181,23 @@ void YM2612::noteOn(byte channel) {
 // 		}
 // }
 
-float YM2612::noteToFrequency(int note) {
-	if (note <= 0)
-		note = 1;
-	note += 5;
-	static float freq[] = {
-	    261.63f, 277.18f, 293.66f, 311.13f, 329.63f, 349.23f, 369.99f, 392.00f, 415.30f, 440.00f, 466.16f, 493.88f,
-	};
-	static float multiplier[] = {
-	    0.03125f, 0.0625f, 0.125f, 0.25f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f, 16.0f, 32.0f,
-	};
-
-	return (freq[note % 12] * multiplier[note / 12] * finey);
-}
+// float YM2612::noteToFrequency(int note) { // unused - only called from commented-out pitchBend()
+// 	if (note <= 0)
+// 		note = 1;
+// 	note += 5;
+// 	static float freq[] = {
+// 	    261.63f, 277.18f, 293.66f, 311.13f, 329.63f, 349.23f, 369.99f, 392.00f, 415.30f, 440.00f, 466.16f, 493.88f,
+// 	};
+// 	static float multiplier[] = {
+// 	    0.03125f, 0.0625f, 0.125f, 0.25f, 0.5f, 1.0f, 2.0f, 4.0f, 8.0f, 16.0f, 32.0f,
+// 	};
+//
+// 	return (freq[note % 12] * multiplier[note / 12] * finey);
+// }
 
 void YM2612::setFrequency(uint8_t chan, float frequency) {
 
-	// if (stag)
+	// if (stag) // unused
 	chan = stagger[chan];
 
 	int block = 2;

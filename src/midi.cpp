@@ -1818,44 +1818,58 @@ void sendNoteOn(byte note, byte velocity, byte channel) {
 int sysExDataIndex = 0;
 byte sysExData[MAX_SYSEX_DATA_LENGTH];
 
+void handleSysExByte(byte command, byte b) {
+	// TODO: handle decoded sysex payload byte
+	(void)command;
+	(void)b;
+}
+
 void handleSysEx() {
-	// Do something with the data in sysExData, which has length sysExDataIndex
+	// Handle the received SysEx data in sysExData array with length sysExDataIndex
+	//
+	// The data has to have our manufacturer ids in bytes 0-2 to be considered valid
+	// (checked during receive). Layout of sysExData[]:
+	//
+	// [0]:    0   (manufacturer ID byte 1)
+	// [1]:    33  (manufacturer ID byte 2)
+	// [2]:    68  (manufacturer ID byte 3)
+	// [3]:    command (e.g. 91 for preset dump)
+	// [4]:    len MSB  \  14-bit count of payload bytes
+	// [5]:    len LSB  /
+	// [6]:    LSBs of block 0  (bit j = LSB of payload byte j)
+	// [7-13]: upper 7 bits of payload bytes 0-6 (each shifted right by 1 during encode)
+	// [14]:   LSBs of block 1
+	// [15-21]: upper 7 bits of payload bytes 7-13
+	// ...
+	//
+	// Decoding: byte[j] = (encoded[j] << 1) | ((lsb_bits >> j) & 1)
 
-	// Interpret the data in tuples: we treat the first byte as the CC number, and the next as value
-	// This is wasteful, but for now this just a proof of concept.
+	mStatus = 0;
+	mData = 0;
+	lastNumber = -1;
+	showPresetNumberTimeout = 12000;
 
-
+	// Need at least 3 manufacturer + 1 command + 2 length bytes
 	if (sysExDataIndex < 6) {
-		// Not enough data for even one CC; ignore
-		digit(0, 20); // -
-		digit(1, 0);
-	} else {
-		if ((sysExData[3] == 0) && (sysExData[4] == 0)) {
-			seqLength = sysExData[5];
-			// X X X 0 0 L b1 ... b2L = sequence data
-			if (sysExDataIndex != 6 + 2 * seqLength) {
-				digit(0, 20); // -
-				digit(1, 1);
-			} else {
-				for (int i = 6; i < 6 + 2 * seqLength; i += 2) {
-					seq[(i-6)/2] = sysExData[i] * 128 + sysExData[i+1]; // LSB and MSB to get 0-255 value
-				}
-				digit(0, 20); // -
-				digit(1, 2);
-			}
-		} else {
-			// not handeled
-			digit(0, 20); // -
-			digit(1, 9);
+		sysExDataIndex = 0;
+		return;
+	}
+
+	byte command = sysExData[3];
+	int length = ((int)sysExData[4] << 7) | sysExData[5];
+	int offset = 6;
+
+	for (int i = 0; i < length; ) {
+		if (offset >= sysExDataIndex) break;
+		byte lsb_bits = sysExData[offset++];
+		for (int j = 0; j < 7 && i < length; j++, i++) {
+			if (offset >= sysExDataIndex) break;
+			byte b = (sysExData[offset++] << 1) | ((lsb_bits >> j) & 1);
+			handleSysExByte(command, b);
 		}
 	}
 
-	mStatus = 0;
 	sysExDataIndex = 0;
-	mData = 0;
-
-	lastNumber = -1;
-	showPresetNumberTimeout = 12000;
 }
 
 void abortSysEx() {

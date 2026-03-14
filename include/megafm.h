@@ -171,7 +171,7 @@ extern bool sync;
 extern bool ab;
 extern int potLast[64];
 extern int lastMpeVoice;
-extern int pressureCounter;
+// extern int pressureCounter; // unused
 extern int lfoDepth[3];
 extern bool buttLast[19];
 extern byte keyPressure[128];
@@ -219,7 +219,7 @@ extern int vibPitch;
 extern byte presetTp;
 extern int vibCounter;
 extern int shuffleTimer;
-extern byte seed;
+// extern byte seed; // unused
 
 extern byte potClock;
 extern bool mpe;

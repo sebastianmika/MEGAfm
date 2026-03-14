@@ -233,7 +233,7 @@ bool linked[3][51];
 byte octOffset;
 byte lfoRandom[3][32];
 int displayFreeze;
-int pressureCounter;
+// int pressureCounter; // unused
 int polyPressure[12];
 int polyVel[12];
 int showPresetNumberTimeout; // we show the preset number when this expires (after moving a knob or fader);
@@ -283,7 +283,7 @@ int vibPitch;
 byte presetTp;
 int vibCounter;
 int shuffleTimer;
-byte seed;
+// byte seed; // unused - only written to, never read for any purpose
 byte potClock;
 bool mpe;
 

@@ -345,10 +345,10 @@ void loop() {
 			arpFire();
 		}
 
-		seed++;
-		if (!seed) {
-			seed = random(3);
-		}
+		// seed++; // unused - seed is never read for any purpose
+		// if (!seed) {
+		// 	seed = random(3);
+		// }
 
 		if ((bankCounter) && (flashCounter2 > 400)) {
 			flasher = !flasher;

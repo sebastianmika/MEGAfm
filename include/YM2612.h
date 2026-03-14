@@ -3,7 +3,7 @@
 
 #include "Arduino.h"
 #include <inttypes.h>
-#include "LinkedList.h"
+// #include "LinkedList.h" // unused - all LinkedList usages are commented out
 
 #define UNUSED(x) (void)(x)
 #define YM_MASTER_ADDR (0x22)
@@ -62,21 +62,21 @@ typedef struct {
 		uint8_t L_R_AMS_FMS[4];
 } Channels_t;
 
-typedef enum {
-	MONO1x6,
-	POLY6x1,
-	POLY3x2,
-	POLY2x3,
-	SPLIT_MONO1x3_MONO1x3,
-	SPLIT_MONO1x3_POLY3x1,
-	SPLIT_POLY3x1_MONO1x3,
-	SPLIT_POLY3x1_POLY3x1
-} playmode_t;
+// typedef enum { // unused - playmode member is commented out
+// 	MONO1x6,
+// 	POLY6x1,
+// 	POLY3x2,
+// 	POLY2x3,
+// 	SPLIT_MONO1x3_MONO1x3,
+// 	SPLIT_MONO1x3_POLY3x1,
+// 	SPLIT_POLY3x1_MONO1x3,
+// 	SPLIT_POLY3x1_POLY3x1
+// } playmode_t;
 
 typedef struct {
 		bool on;
-		uint8_t note;
-		float frequency;
+		// uint8_t note;      // unused - only referenced in commented-out pitchBend()
+		// float frequency;   // unused - only referenced in commented-out pitchBend()
 } voice_t;
 
 class YM2612 {
@@ -85,14 +85,14 @@ class YM2612 {
 		           uint8_t mc_pin, uint8_t data0_pin, uint8_t data1_pin, uint8_t data2_pin, uint8_t data3_pin,
 		           uint8_t data4_pin, uint8_t data5_pin, uint8_t data6_pin, uint8_t data7_pin);
 
-		// void setAmVib(byte number, int data);
-		// void setPlaymode(int value);
-		// void selectChannel(int value) { selected_channel = value; }
+		// void setAmVib(byte number, int data); // unused
+		// void setPlaymode(int value); // unused
+		// void selectChannel(int value) { selected_channel = value; } // unused
 
 		void selectOperator(int op, int value) { operators[op] = (value > 0); }
 
 		// master params
-		// void setLFO(int value);
+		// void setLFO(int value); // unused
 		void setChan3Mode(int value) { setMasterParameter(YM_MA_CH3_M, value); }
 
 		// channel params
@@ -115,6 +115,7 @@ class YM2612 {
 		void setRateScaling(int value) { setOperatorParameter(YM_OP_RS, value); }
 		void setSSG_EG(int value) { setOperatorParameter(YM_OP_SSG_EG, value); }
 
+		// unused
 		// void setAmplitudeModulation(int channel, int value) {
 		// 	channel = stagger[channel];
 		// 	if (channel > 5) {
@@ -226,6 +227,7 @@ class YM2612 {
 			setOperatorParameter(channel, YM_OP_RS, value);
 			chip = 0;
 		}
+		// unused
 		// void setSSG_EG(int channel, int value) {
 		// 	channel = stagger[channel];
 		// 	if (channel > 5) {
@@ -240,36 +242,36 @@ class YM2612 {
 
 		void noteOn(byte chan);
 		void noteOff(byte chan);
-		// void pitchBend(byte channel, int bend);
-		// void update();
-		// void updatePitch();
+		// void pitchBend(byte channel, int bend); // unused
+		// void update(); // unused
+		// void updatePitch(); // unused
 
-		// void updateBend(float input);
-		// void setFine(float input);
+		// void updateBend(float input); // unused
+		// void setFine(float input); // unused
 		void setFrequency3(byte op, uint8_t channel, float frequency);
 		void setFrequencySingle(uint8_t channel, float frequency);
-		// void setStagger(bool data);
+		// void setStagger(bool data); // unused
 
 	private:
 		byte chip;
-		// float fat;
-		// int amVib[4];
-		// float bendy = 1;
-		float finey = 1;
-		// bool stag = true;
+		// float fat; // unused
+		// int amVib[4]; // unused
+		// float bendy = 1; // unused
+		// float finey = 1; // unused - only used in commented-out noteToFrequency()
+		// bool stag = true; // unused
 
-		voice_t voices[6];
-		// uint8_t voices_order[6];
-		// uint8_t voices_order_index = 0;
+		// uvoice_t voices[6]; // unused
+		// uint8_t voices_order[6]; // unused
+		// uint8_t voices_order_index = 0; // unused
 
-		// LinkedList<uint8_t> notes_stack0 = LinkedList<uint8_t>();
-		// LinkedList<uint8_t> voices_stack0 = LinkedList<uint8_t>();
-		// LinkedList<uint8_t> notes_stack1 = LinkedList<uint8_t>();
-		// LinkedList<uint8_t> voices_stack1 = LinkedList<uint8_t>();
-		// uint8_t splitNote = 60;
-		int pitchBendValue = 0;
+		// LinkedList<uint8_t> notes_stack0 = LinkedList<uint8_t>(); // unused
+		// LinkedList<uint8_t> voices_stack0 = LinkedList<uint8_t>(); // unused
+		// LinkedList<uint8_t> notes_stack1 = LinkedList<uint8_t>(); // unused
+		// LinkedList<uint8_t> voices_stack1 = LinkedList<uint8_t>(); // unused
+		// uint8_t splitNote = 60; // unused
+		// int pitchBendValue = 0; // unused - only referenced in commented-out pitchBend()
 
-		// playmode_t playmode;
+		// playmode_t playmode; // unused
 		uint8_t selected_channel;
 		bool operators[4];
 
@@ -290,8 +292,8 @@ class YM2612 {
 		uint8_t data5_pin;
 		uint8_t data6_pin;
 		uint8_t data7_pin;
-		// uint8_t channelPart();
-		// uint8_t channelOffset();
+		// uint8_t channelPart(); // unused
+		// uint8_t channelOffset(); // unused
 		void sendData(uint8_t data);
 		void setRegister(uint8_t part, uint8_t reg, uint8_t data);
 		void setMasterParameter(int reg_offset, int val_size, int val_shift, int val);
@@ -307,7 +309,7 @@ class YM2612 {
 		void keyOn(uint8_t channel);
 		void keyOff(uint8_t channel);
 
-		float noteToFrequency(int note);
+		// float noteToFrequency(int note); // unused - only called from commented-out pitchBend()
 };
 
 #endif

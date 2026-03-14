@@ -369,7 +369,7 @@ void setup() {
 	Serial.begin(31250);
 	// midiSetup();
 
-	initFirstCC();
+	initLastCC();
 
 	mux(13);
 	if ((!digitalRead(A1)) ||

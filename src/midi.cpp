@@ -19,7 +19,6 @@ static bool ch3Alt;
 static const float vibIncrements[8] = {5.312, 7.968, 10.625, 14.166, 15.937, 31.875, 42.5, 63.75};
 static float vibIndexF;
 
-static bool firstCC[80];
 static byte lastCC[80];
 
 static int arpClockCounter;
@@ -27,9 +26,9 @@ static byte syncLfoCounter;
 
 static bool arpClearFlag = false;
 
-void initFirstCC() {
+void initLastCC() {
 	for (int i = 0; i < 80; i++) {
-		firstCC[i] = true;
+		lastCC[i] = 255;
 	}
 }
 
@@ -226,7 +225,7 @@ void handleStart() {
 void handleContinue() { handleStart(); }
 
 void handleProgramChange(byte channel, byte program) {
-	if ((program < 99) && (channel == inputChannel)) {
+	if ((program < 100) && (channel == inputChannel)) {
 
 		preset = program;
 		loadPreset();
@@ -724,8 +723,7 @@ void sendCCForce(byte number, int value) { sendControlChange(number, value, mast
 
 void sendCC(byte number, int value) {
 
-	if (firstCC[number] || (lastCC[number] != value)) {
-		firstCC[number] = false;
+	if (lastCC[number] != value) {
 		lastCC[number] = value;
 		rightDot();
 		sendControlChange(number, value, masterChannelOut);
@@ -1508,7 +1506,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 
 			else if (channel == inputChannel) {
 				if (number == 0) {
-					if (val <= 5) {
+					if (val < 6) {
 						if (bank != val) {
 							bank = val;
 							handleProgramChange(inputChannel, preset);
@@ -1555,13 +1553,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 					else if (number == 7)
 						pot = 1;
 
-					if (kAllCC) {
-						movedPot(pot, val << 1, 1);
-					} else {
-						if ((pot != 19) && (pot != 40) && (pot != 16) && (pot != 38)) {
-							movedPot(pot, val << 1, 1);
-						}
-					}
+					movedPot(pot, val << 1, 1);
 				}
 			}
 		}

@@ -78,7 +78,6 @@ const byte kVersion1 = 2;
 
 const byte kDefaultSeq[16] = {0, 0, 0, 0, 12, 12, 12, 12, 0, 0, 12, 0, 0, 12, 12, 0};
 
-const bool kAllCC = true;
 const byte x12[] = {0, 12, 24, 36};
 const byte kArpRateDisplay[] = {0, 0, 0, 2, 3, 4, 8, 12, 16, 32, 48};       // show tempo divisions
 const int16_t kMidiArpTicks[] = {384, 192, 96, 48, 32, 24, 12, 8, 6, 3, 2}; // arp rates in MIDI ticks

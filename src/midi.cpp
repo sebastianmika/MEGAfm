@@ -1810,10 +1810,58 @@ void sendNoteOn(byte note, byte velocity, byte channel) {
 int sysExDataIndex = 0;
 byte sysExData[MAX_SYSEX_DATA_LENGTH];
 
+// State for NRPN messages embedded in sysex payload.
+// Each message is 4 consecutive bytes: CC99 value, CC98 value, CC38 value, CC6 value.
+static byte sysExNrpnState = 0;
+static int sysExNrpnMsg = 0;
+static int sysExNrpnData = 0;
+
+static void resetSysExByteState() {
+	sysExNrpnState = 0;
+	sysExNrpnMsg = 0;
+	sysExNrpnData = 0;
+}
+
 void handleSysExByte(byte command, byte b) {
-	// TODO: handle decoded sysex payload byte
-	(void)command;
-	(void)b;
+	if (command == 91) {
+		// Treat every 4 consecutive bytes as a NRPN message:
+		//   byte 0: CC 99 value (NRPN parameter MSB)
+		//   byte 1: CC 98 value (NRPN parameter LSB)
+		//   byte 2: CC 38 value (NRPN data LSB)
+		//   byte 3: CC  6 value (NRPN data MSB)
+		switch (sysExNrpnState) {
+			case 0:  // CC 99: parameter MSB
+				sysExNrpnMsg = b;
+				sysExNrpnState = 1;
+				break;
+			case 1:  // CC 98: parameter LSB
+				sysExNrpnMsg = (sysExNrpnMsg << 7) | b;
+				sysExNrpnState = 2;
+				break;
+			case 2:  // CC 38: data LSB
+				sysExNrpnData = b;
+				sysExNrpnState = 3;
+				break;
+			case 3:  // CC 6: data MSB
+				sysExNrpnData = (b << 7) | sysExNrpnData;
+				handleNRPN(sysExNrpnMsg, sysExNrpnData);
+				resetSysExByteState();
+				break;
+		}
+	}
+}
+
+void abortSysEx(bool error) {
+	mStatus = 0;
+	sysExDataIndex = 0;
+	mData = 0;
+	resetSysExByteState();
+	if (error) {
+		digit(0, 20); // -
+		digit(1, 20); // -
+	}
+	lastNumber = -1;
+	showPresetNumberTimeout = 12000;
 }
 
 void handleSysEx() {
@@ -1837,9 +1885,7 @@ void handleSysEx() {
 	// Decoding: byte[j] = (encoded[j] << 1) | ((lsb_bits >> j) & 1)
 
 	mStatus = 0;
-	mData = 0;
-	lastNumber = -1;
-	showPresetNumberTimeout = 12000;
+	mData = 0;	
 
 	// Need at least 3 manufacturer + 1 command + 2 length bytes
 	if (sysExDataIndex < 6) {
@@ -1849,7 +1895,21 @@ void handleSysEx() {
 
 	byte command = sysExData[3];
 	int length = ((int)sysExData[4] << 7) | sysExData[5];
+
+	if (command == 91) {
+		if (length % 4 != 0) {
+			// Invalid preset dump (NRPN messages are 4 bytes each)
+			abortSysEx(true);
+			return;
+		} else {
+			digit(0, 14); // P
+			digit(1, 21); // blank
+		}
+	}
+
 	int offset = 6;
+
+	resetSysExByteState();
 
 	for (int i = 0; i < length; ) {
 		if (offset >= sysExDataIndex) break;
@@ -1861,17 +1921,9 @@ void handleSysEx() {
 		}
 	}
 
-	sysExDataIndex = 0;
-}
-
-void abortSysEx() {
-	mStatus = 0;
-	sysExDataIndex = 0;
-	mData = 0;
-	digit(0, 20); // -
-	digit(1, 20); // -
 	lastNumber = -1;
 	showPresetNumberTimeout = 12000;
+	sysExDataIndex = 0;
 }
 
 void midiRead() {
@@ -1887,8 +1939,10 @@ void midiRead() {
 			if ((mStatus == 8) && (input == 247))  {  // input == F7
 				// In SysEx and receivd Sysex end; handle data and end sysex mode
 				handleSysEx();
+				abortSysEx(false);
 			} else if (mStatus == 8) {
-				abortSysEx();
+				// In SysEx but received a non-F7 status byte; invalid message, exit SysEx mode
+				abortSysEx(true);
 			}
 			switch (input) {
 				case 248:
@@ -2034,11 +2088,11 @@ void midiRead() {
 							// from hex2sys = \x00\x21\x44 = 00 33 68)
 							if (sysExData[0] != 0 || sysExData[1] != 33 || sysExData[2] != 68) {
 								// not for us, ignore the rest of the message
-								abortSysEx();
+								abortSysEx(true);
 								break;
 							}
 						} else if (sysExDataIndex == MAX_SYSEX_DATA_LENGTH) {
-							abortSysEx();
+							abortSysEx(true);
 							break;
 						}
 						sysExData[sysExDataIndex++] = input;

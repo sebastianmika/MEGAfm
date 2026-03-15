@@ -10,11 +10,14 @@ void handleProgramChange(byte channel, byte program);
 // void handleNoteOn(byte channel, byte note, byte velocity);
 // void handleNoteOff(byte channel, byte note, byte velocity);
 void sendCC(byte number, int value);
+void sendNRPN(int msg, int value);
 void sendMidiButt(byte number, int value);
 void HandleControlChange(byte channel, byte number, byte val);
 void pedalUp();
 void pedalDown();
 void dumpPreset();
+void dumpPresetNRPN();
+void dumpPresetAsSysEx();
 void resyncArpLfo();
 void sendControlChange(byte number, byte value, byte channel);
 void sendNoteOff(byte note, byte velocity, byte channel);
@@ -23,5 +26,6 @@ void sendNoteOn(byte note, byte velocity, byte channel);
 void midiRead();
 void initLastCC();
 void setOperatorEnvelopeMode(byte op, kEnvelopeMode mode);
+kEnvelopeMode getOperatorEnvelopeMode(byte op);
 
 #endif // MEGAFM_CMAKE_MIDI_H

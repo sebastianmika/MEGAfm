@@ -406,7 +406,8 @@ void loadPreset() {
 	showVoiceMode(voiceMode);
 	Serial.begin(31250);
 	fmResetValues();
-	dumpPreset();
+	// dumpPreset();
+	dumpPresetAsSysEx();
 	startTimer();
 
 	// make sure fmBaseLast != fmBase (to reset the engine)

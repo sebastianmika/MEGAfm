@@ -214,13 +214,13 @@ void fm(byte number, byte data) {
 			break; // r
 
 		case 36:
-			lfoClockSpeedPending[0] = map(data, 0, 255, 0, 11);
+			lfoClockSpeedPending[0] = map(data, 0, 255, 0, 12);
 			break;
 		case 38:
-			lfoClockSpeedPending[1] = map(data, 0, 255, 0, 11);
+			lfoClockSpeedPending[1] = map(data, 0, 255, 0, 12);
 			break;
 		case 40:
-			lfoClockSpeedPending[2] = map(data, 0, 255, 0, 11);
+			lfoClockSpeedPending[2] = map(data, 0, 255, 0, 12);
 			break;
 
 		case 42:

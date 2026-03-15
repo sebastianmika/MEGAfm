@@ -194,18 +194,7 @@ void showLfoWaveform(byte selectedLfo) {
 }
 
 void sendSSEGCC(byte op) {
-	if (bitRead(SSEG[op], 1)) {
-		// on; send mode
-		if (!bitRead(SSEG[op], 0)) {
-			// loop mode
-			sendCC(78, 25 + 10 * op + 1); // 26, 36, 46 = loop
-		} else {
-			sendCC(78, 25 + 10 * op + 2); // 27, 37, 47 = ping pong
-		}
-	} else {
-		// off; send pitch
-		sendCC(78, 25 + 10 * op); // 25, 35, 45 = off
-	}
+	sendNRPN(NRPN_OP1_BASE + NRPN_OP_ENV_MODE + NRPN_OP_STRIDE * op, getOperatorEnvelopeMode(op));
 }
 
 void buttChanged(Button number, bool value) {
@@ -223,7 +212,7 @@ void buttChanged(Button number, bool value) {
 							digit(1, 0);
 						}
 						delay(800);
-						sendCC(70, 48 + thru);
+						sendNRPN(NRPN_SET_MIDI_THRU, thru);
 						break; // chain1
 
 					case kButtonChainLfo2:
@@ -241,7 +230,7 @@ void buttChanged(Button number, bool value) {
 							digit(1, 14);
 							delay(400);
 						}
-						sendCC(70, 50 + pickupMode);
+						sendNRPN(NRPN_SET_PICKUP_MODE, pickupMode);
 						break; // chain 2
 
 					case kButtonRetrig:
@@ -265,7 +254,7 @@ void buttChanged(Button number, bool value) {
 								delay(800);
 								break; // LA
 						}
-						sendCC(70, 60 + notePriority);
+						sendNRPN(NRPN_NOTE_PRIORITY, notePriority);
 						break; // retrig
 
 					case kButtonChainLfo3:
@@ -281,7 +270,7 @@ void buttChanged(Button number, bool value) {
 							digit(1, 3);
 							delay(800);
 						}
-						sendCC(70, 52 + stereoCh3);
+						sendNRPN(NRPN_SET_STEREO_CH3, stereoCh3);
 						break; // chain 3
 
 					case kButtonArpMode:
@@ -302,13 +291,13 @@ void buttChanged(Button number, bool value) {
 						}
 						EEPROM.write(3960, mpe);
 						ledSet(LED_ARP_MODE, !mpe);
-						sendCC(70, 54 + mpe);
+						sendNRPN(NRPN_SET_MPE_MODE, mpe);
 						break; // MPE mode
 
 					case kButtonNoise:
 						fatSpreadMode = !fatSpreadMode;
 						ledSet(LED_RANDOM, fatSpreadMode);
-						sendCC(70, 67 + fatSpreadMode);
+						sendNRPN(NRPN_SET_FAT_SPREAD, fatSpreadMode);
 						break; // NOISE
 
 					case kButtonVoiceMode:
@@ -425,7 +414,7 @@ void buttChanged(Button number, bool value) {
 								fineChanged = true; // prevents voice mode change
 								setupCounter = 0;   // prevents entering setup
 								ledNumber(octOffset);
-								sendCC(78, 10 + octOffset);
+								sendNRPN(NRPN_SET_OCT_OFFSET, octOffset);
 							} else {
 								if (arpModeHeld) {
 									changedChannel = true;
@@ -462,7 +451,7 @@ void buttChanged(Button number, bool value) {
 								ledNumber(octOffset);
 								fineChanged = true; // prevents voice mode change
 								setupCounter = 0;   // prevents entering setup
-								sendCC(78, 10 + octOffset);
+								sendNRPN(NRPN_SET_OCT_OFFSET, octOffset);
 							} else {
 								if (arpModeHeld) {
 									changedChannel = true;
@@ -545,7 +534,7 @@ void buttChanged(Button number, bool value) {
 									invertedSquare[selectedLfo] = false;
 									showLfo();
 								}
-								sendCC(70, 0 + invertedSquare[selectedLfo] + 16 * selectedLfo);
+								sendNRPN(NRPN_LFO_SHAPE + selectedLfo, invertedSquare[selectedLfo]);
 								showLfoWaveform(selectedLfo);
 							}
 						}
@@ -571,7 +560,7 @@ void buttChanged(Button number, bool value) {
 							if (!showSSEGCounter) {
 								lfoShape[selectedLfo] = kTriangle;
 								showLfo();
-								sendCC(70, 2 + 16 * selectedLfo); // 70, 2 for tri, plus 16 per LFO
+								sendNRPN(NRPN_LFO_SHAPE + selectedLfo, 2);
 								showLfoWaveform(selectedLfo);
 							}
 
@@ -607,8 +596,7 @@ void buttChanged(Button number, bool value) {
 									invertedSaw[selectedLfo] = false;
 									showLfo();
 								}
-								sendCC(70, 3 + invertedSaw[selectedLfo] +
-								               16 * selectedLfo); // 70, 3/4 for saw/inv-saw, plus 16 per LFO
+								sendNRPN(NRPN_LFO_SHAPE + selectedLfo, 3 + invertedSaw[selectedLfo]);
 								showLfoWaveform(selectedLfo);
 							} else {
 								setSSEG(lastOperator, 0, 0); // operator bitIndex value}
@@ -643,12 +631,7 @@ void buttChanged(Button number, bool value) {
 									setNoiseTableLength(selectedLfo, 2);
 									showLfo();
 								}
-								if (noiseTableLength[selectedLfo] == 2) {
-									sendCC(70, 5 + 16 * selectedLfo); // cc=70, 5 for noise inf, plus 16 per LFO
-								} else {
-									// cc=70, noise 8, 16, 32 on 93-95, plus 3 per LFO
-									sendCC(70, 93 + (noiseTableLength[selectedLfo] - 3) + 3 * selectedLfo);
-								}
+								sendNRPN(NRPN_LFO_SHAPE + selectedLfo, noiseTableLength[selectedLfo] + 3);
 
 								showLfoWaveform(selectedLfo);
 							}
@@ -678,8 +661,7 @@ void buttChanged(Button number, bool value) {
 								// 6+7 lfo1 on/off
 								// 22+23 lfo2 on/off
 								// 38+39 lfo3 on/off
-								sendCC(70, 6 + retrig[selectedLfo] +
-								               16 * selectedLfo); // 70, 6-7 for retrig on/off, plus 16 per LFO
+								sendNRPN(NRPN_LFO_RETRIG + selectedLfo, retrig[selectedLfo]);
 							}
 						}
 						break; // retrig
@@ -762,7 +744,7 @@ void buttChanged(Button number, bool value) {
 											voiceMode = kVoicingDualCh3;
 										}
 										showVoiceMode(voiceMode);
-										sendCC(78, voiceMode);
+										sendNRPN(NRPN_SET_VOICE_MODE, voiceMode);
 
 										// Reset notes after a voiceChange
 										resetVoices();
@@ -887,7 +869,7 @@ void buttChanged(Button number, bool value) {
 									resetVoices();
 
 									arpMode = arpModeLast;
-									sendCC(70, 85 + arpMode);
+									sendNRPN(NRPN_ARP_MODE, arpMode);
 									showArpMode();
 									ledSet(LED_ARP_MODE, 1);
 								} else if (arpMode > 0) {
@@ -898,7 +880,7 @@ void buttChanged(Button number, bool value) {
 										resyncArp = true;
 									}
 									arpModeLast = arpMode;
-									sendCC(70, 85 + arpMode);
+									sendNRPN(NRPN_ARP_MODE, arpMode);
 									showArpMode();
 								}
 							}
@@ -920,7 +902,7 @@ void buttChanged(Button number, bool value) {
 										seqRec = true;
 										displayFreeze = 0;
 										arpMode = kArpSequence1;
-										sendCC(70, 85 + arpMode);
+										sendNRPN(NRPN_ARP_MODE, arpMode);
 										ledSet(LED_ARP_MODE, 1);
 										digit(0, 5);
 										digit(1, 18);
@@ -939,7 +921,7 @@ void buttChanged(Button number, bool value) {
 							if (!cleared) {
 								linked[0][targetPot] = !linked[0][targetPot];
 								showLink();
-								sendCC(71, 2 * targetPot + linked[0][targetPot]);
+								sendNRPN(NRPN_LFO_LINK, 2 * targetPot + linked[0][targetPot]);
 							}
 						}
 						break; // chain1
@@ -950,7 +932,7 @@ void buttChanged(Button number, bool value) {
 							if (!cleared) {
 								linked[1][targetPot] = !linked[1][targetPot];
 								showLink();
-								sendCC(72, 2 * targetPot + linked[1][targetPot]);
+								sendNRPN(NRPN_LFO_LINK + 1, 2 * targetPot + linked[1][targetPot]);
 							}
 						}
 						break; // chain2
@@ -961,7 +943,7 @@ void buttChanged(Button number, bool value) {
 							if (!cleared) {
 								linked[2][targetPot] = !linked[2][targetPot];
 								showLink();
-								sendCC(73, 2 * targetPot + linked[2][targetPot]);
+								sendNRPN(NRPN_LFO_LINK + 2, 2 * targetPot + linked[2][targetPot]);
 							}
 						}
 						break; // chain3
@@ -991,7 +973,7 @@ void buttChanged(Button number, bool value) {
 									// 8+9 = lfo1 on/off
 									// 24+25 = lfo2 on/off
 									// 40+41 = lfo3 on/off
-									sendCC(70, 8 + looping[selectedLfo] + 16 * selectedLfo);
+									sendNRPN(NRPN_LFO_LOOPING + selectedLfo, looping[selectedLfo]);
 								} else {
 									setSSEG(lastOperator, 1,
 									        !bitRead(SSEG[lastOperator], 1)); // flip the SSEG enable bit

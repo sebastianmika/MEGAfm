@@ -16,10 +16,39 @@
 
 static byte voiceSlot;
 static bool ch3Alt;
-static const float vibIncrements[8] = {5.312, 7.968, 10.625, 14.166, 15.937, 31.875, 42.5, 63.75};
 static float vibIndexF;
 
 static byte lastCC[80];
+
+// Compact index for the 88 distinct NRPN message numbers used by this firmware:
+//   100-114 → 0-14, 200-209 → 15-24, 220-232 → 25-37, 300-303 → 38-41,
+//   500-502 → 42-44, 1000-1002 → 45-47, 2000-2009 → 48-57, 3000-3009 → 58-67,
+//   4000-4009 → 68-77, 5000-5009 → 78-87
+static int16_t lastNRPN[88];
+
+static int nrpnIndex(int msg) {
+	if (msg >= NRPN_LFO_SHAPE && msg <= NRPN_LFO_AT)
+		return msg - NRPN_LFO_SHAPE;
+	if (msg >= NRPN_SET_BRIGHTNESS && msg <= NRPN_SET_OCT_OFFSET)
+		return msg - 185;
+	if (msg >= NRPN_FINE_TUNE && msg <= NRPN_NOTE_PRIORITY)
+		return msg - 195;
+	if (msg >= NRPN_ARP_MODE && msg <= NRPN_ARP_RANGE)
+		return msg - 262;
+	if (msg >= NRPN_VIB_CLOCK_SYNC && msg <= NRPN_VIB_DEPTH)
+		return msg - 458;
+	if (msg >= NRPN_LFO_LINK && msg <= NRPN_LFO_LINK + 2)
+		return msg - 955;
+	if (msg >= NRPN_OP1_BASE && msg <= NRPN_OP1_BASE + NRPN_OP_RATE_SCALE)
+		return msg - 1952;
+	if (msg >= NRPN_OP2_BASE && msg <= NRPN_OP2_BASE + NRPN_OP_RATE_SCALE)
+		return msg - 2942;
+	if (msg >= NRPN_OP3_BASE && msg <= NRPN_OP3_BASE + NRPN_OP_RATE_SCALE)
+		return msg - 3932;
+	if (msg >= NRPN_OP4_BASE && msg <= NRPN_OP4_BASE + NRPN_OP_RATE_SCALE)
+		return msg - 4922;
+	return -1;
+}
 
 static int arpClockCounter;
 static byte syncLfoCounter;
@@ -29,6 +58,9 @@ static bool arpClearFlag = false;
 void initLastCC() {
 	for (int i = 0; i < 80; i++) {
 		lastCC[i] = 255;
+	}
+	for (int i = 0; i < 88; i++) {
+		lastNRPN[i] = -1;
 	}
 }
 
@@ -95,7 +127,7 @@ void handleClock() {
 		////////////////////////////////////
 		if (vibratoClockEnable) {
 			if (fmData[48]) {
-				vibIndexF += vibIncrements[fmData[48] >> 5];
+				vibIndexF += kLfoClockRates[map(fmData[48], 0, 255, 0, 12)];
 				if (vibIndexF > 255) {
 					vibIndexF -= 256;
 				}
@@ -731,10 +763,18 @@ void sendCC(byte number, int value) {
 }
 
 void sendNRPN(int msg, int value) {
-	rightDot();
-	sendControlChange(99, msg >> 7, masterChannelOut); // NRPN MSB
-	sendControlChange(98, msg & 0x7F, masterChannelOut); // NRPN LSB
-	sendControlChange(6, value >> 7, masterChannelOut); // Data Entry MSB
+	int idx = nrpnIndex(msg);
+	if (idx >= 0 && lastNRPN[idx] == value)
+		return;
+	if (idx >= 0) {
+		lastNRPN[idx] = value;
+		rightDot();
+	} else
+		// An NRPN we do not map; send, but with left dot feedback for debugging
+		leftDot();
+	sendControlChange(99, msg >> 7, masterChannelOut);     // NRPN MSB
+	sendControlChange(98, msg & 0x7F, masterChannelOut);   // NRPN LSB
+	sendControlChange(6, value >> 7, masterChannelOut);    // Data Entry MSB
 	sendControlChange(38, value & 0x7F, masterChannelOut); // Data Entry LSB
 }
 
@@ -887,13 +927,16 @@ void setLFOShape(byte lfo, byte value) {
 			break;
 		case 6:
 			lfoShape[lfo] = kRandom;
-			noiseTableLength[lfo] = 8;
+			noiseTableLength[lfo] = 3;
+			break;
 		case 7:
 			lfoShape[lfo] = kRandom;
-			noiseTableLength[lfo] = 16;
+			noiseTableLength[lfo] = 4;
+			break;
 		case 8:
 			lfoShape[lfo] = kRandom;
-			noiseTableLength[lfo] = 32;
+			noiseTableLength[lfo] = 5;
+			break;
 	}
 	showLfoWaveform(lfo);
 }
@@ -913,27 +956,27 @@ int nrpn_msg = 0;
 int nrpn_data = 0;
 byte nrpn_state = 0;
 
-void handleNRPN(int msg, int int_val) {	
-	// NRPN values are sent as 14 bit values, but we only mostly only use the lower 8 bits 
-	byte byte_val = (byte) int_val;
+void handleNRPN(int msg, int int_val) {
+	// NRPN values are sent as 14 bit values, but we only mostly only use the lower 8 bits
+	byte byte_val = (byte)int_val;
 	bool bool_val = (int_val > 0);
 
-	if ((msg >= 100) && (msg <= 114)) {
-		if ((msg >= 100) && (msg <= 102)) {
+	if ((msg >= NRPN_LFO_SHAPE) && (msg <= NRPN_LFO_AT)) {
+		if ((msg >= NRPN_LFO_SHAPE) && (msg <= NRPN_LFO_SHAPE + 2)) {
 			// Shape LFO1: 100, LFO2: 101, LFO3: 102
-			selectedLfo = (byte) (msg - 100);
+			selectedLfo = (byte)(msg - NRPN_LFO_SHAPE);
 			setLFOShape(selectedLfo, byte_val);
-		} else if ((msg >= 103) && (msg <= 105)) {
+		} else if ((msg >= NRPN_LFO_LOOPING) && (msg <= NRPN_LFO_LOOPING + 2)) {
 			// Looping LFO1: 103, LFO2: 104, LFO3: 105
-			selectedLfo = (byte) (msg - 103);
+			selectedLfo = (byte)(msg - NRPN_LFO_LOOPING);
 			looping[selectedLfo] = bool_val;
-		} else if ((msg >= 106) && (msg <= 108)) {
+		} else if ((msg >= NRPN_LFO_RETRIG) && (msg <= NRPN_LFO_RETRIG + 2)) {
 			// Retrig LFO1: 106, LFO2: 107, LFO3: 108
-			selectedLfo = (byte) (msg - 106);
+			selectedLfo = (byte)(msg - NRPN_LFO_RETRIG);
 			retrig[selectedLfo] = bool_val;
-		} else if ((msg >= 109) && (msg <= 111)) {
+		} else if ((msg >= NRPN_LFO_CLOCK_SYNC) && (msg <= NRPN_LFO_CLOCK_SYNC + 2)) {
 			// MIDI Sync LFO1: 109, LFO2: 110, LFO3: 111
-			selectedLfo = (byte) (msg - 109);
+			selectedLfo = (byte)(msg - NRPN_LFO_CLOCK_SYNC);
 			lfoClockEnable[selectedLfo] = bool_val;
 			switch (selectedLfo) {
 				case 0:
@@ -947,15 +990,15 @@ void handleNRPN(int msg, int int_val) {
 					break;
 			}
 			showOnOff(bool_val);
-		} else if ((msg >= 112) && (msg <= 114)) {
-			selectedLfo = (byte) (msg - 112);
-			if (msg == 112) {
+		} else if ((msg >= NRPN_LFO_VEL) && (msg <= NRPN_LFO_AT)) {
+			selectedLfo = (byte)(msg - NRPN_LFO_VEL);
+			if (msg == NRPN_LFO_VEL) {
 				lfoVel = bool_val;
 				setLFO1Vel();
-			} else if (msg == 113) {
+			} else if (msg == NRPN_LFO_MOD) {
 				lfoMod = bool_val;
 				setLFO2Mod();
-			} else if (msg == 114) {
+			} else if (msg == NRPN_LFO_AT) {
 				lfoAt = bool_val;
 				setLFO3Aftertouch();
 			}
@@ -964,41 +1007,41 @@ void handleNRPN(int msg, int int_val) {
 		}
 		lfoLedOn();
 		showLfo();
-	} else if (msg == 200) {
+	} else if (msg == NRPN_SET_BRIGHTNESS) {
 		// Set brightness (0-15)
 		if (byte_val < 16)
 			setBrightness(byte_val);
-	} else if (msg == 201) {
+	} else if (msg == NRPN_SET_MIDI_THRU) {
 		// Set MIDI thru (0 = off, >0 = on)
 		thru = bool_val;
 		setThru();
 		showOnOff(thru);
-	} else if (msg == 202) {
+	} else if (msg == NRPN_SET_PICKUP_MODE) {
 		// Set Pickup Mide (0 = off, >0 = on)
 		pickupMode = bool_val;
 		setPickupMode();
 		showOnOff(pickupMode);
-	} else if (msg == 203) {
+	} else if (msg == NRPN_SET_STEREO_CH3) {
 		// Set Stereo Channel 3 Mode (0 = off, >0 = on)
 		stereoCh3 = bool_val;
 		setStereoCh3();
 		showOnOff(stereoCh3);
-	} else if (msg == 204) {
+	} else if (msg == NRPN_SET_MPE_MODE) {
 		// Set MPE Mode (0 = off, >0 = on)
 		mpe = bool_val;
 		setMPEMode();
 		showOnOff(mpe);
-	} else if (msg == 205) {
+	} else if (msg == NRPN_SET_FAT_SPREAD) {
 		// Set Fat Spread Mode (0 = off, >0 = on)
 		fatSpreadMode = bool_val;
 		setFatSpreadMode();
 		showOnOff(fatSpreadMode);
-	} else if (msg == 206) {
+	} else if (msg == NRPN_SET_IGNORE_VOL) {
 		// Set Ignore Preset Volume (0 = off, >0 = on)
 		ignoreVolume = bool_val;
 		setIgnoreVolume();
 		showOnOff(ignoreVolume);
-	} else if (msg == 207) {
+	} else if (msg == NRPN_SET_FAT_MODE) {
 		// Set Fat Mode (0 = semitone, >0 = octave)
 		digit(0, 1);
 		if (bool_val) {
@@ -1009,7 +1052,7 @@ void handleNRPN(int msg, int int_val) {
 			digit(1, 27);
 		}
 		setFatMode();
-	} else if (msg == 208) {
+	} else if (msg == NRPN_SET_VOICE_MODE) {
 		// Set Voice Mode (0-5 = (Poly12, Wide6, DualCh3, Unison, Wide4, Wide3)
 		if (byte_val <= 5) {
 			if (!mpe) {
@@ -1018,13 +1061,13 @@ void handleNRPN(int msg, int int_val) {
 				resetVoices();
 			}
 		}
-	} else if (msg == 209) {
+	} else if (msg == NRPN_SET_OCT_OFFSET) {
 		// Set octave offset (0-3)
 		if (byte_val < 4) {
 			octOffset = byte_val;
 			ledNumber(octOffset);
 		}
-	} else if (msg == 220) {
+	} else if (msg == NRPN_FINE_TUNE) {
 		// Set Tune (0-255)
 		// fine = byte_val;
 		// updateFine();
@@ -1036,7 +1079,7 @@ void handleNRPN(int msg, int int_val) {
 		voiceHeld = true;
 		movedPot(KNOB_VOLUME, byte_val, 1);
 		voiceHeld = false;
-	} else if (msg == 221) {
+	} else if (msg == NRPN_GLIDE) {
 		// Set glide (0-15)
 		// if (byte_val < 16) {
 		// 	glide = byte_val >> 3;
@@ -1046,66 +1089,66 @@ void handleNRPN(int msg, int int_val) {
 		voiceHeld = true;
 		movedPot(KNOB_FAT, byte_val, 1);
 		voiceHeld = false;
-	}  else if (msg == 222) {
+	} else if (msg == NRPN_LFO1_RATE) {
 		// LFO 1 Rate
 		movedPot(KNOB_LFO1_RATE, byte_val, 1);
-	} else if (msg == 223) {
+	} else if (msg == NRPN_LFO2_RATE) {
 		// LFO 2 Rate
 		movedPot(KNOB_LFO2_RATE, byte_val, 1);
-	} else if (msg == 224) {
+	} else if (msg == NRPN_LFO3_RATE) {
 		// LFO 3 Rate
 		movedPot(KNOB_LFO3_RATE, byte_val, 1);
-	} else if (msg == 225) {
+	} else if (msg == NRPN_LFO1_DEPTH) {
 		// LFO 1 Depth
 		movedPot(KNOB_LFO1_DEPTH, byte_val, 1);
-	} else if (msg == 226) {
+	} else if (msg == NRPN_LFO2_DEPTH) {
 		// LFO 2 Depth
 		movedPot(KNOB_LFO2_DEPTH, byte_val, 1);
-	} else if (msg == 227) {
+	} else if (msg == NRPN_LFO3_DEPTH) {
 		// LFO 3 Depth
 		movedPot(KNOB_LFO3_DEPTH, byte_val, 1);
-	} else if (msg == 228) {
+	} else if (msg == NRPN_FAT) {
 		// Fat
 		movedPot(KNOB_FAT, byte_val, 1);
-	} else if (msg == 229) {
+	} else if (msg == NRPN_VOLUME) {
 		// Volume
 		movedPot(KNOB_VOLUME, byte_val, 1);
-	} else if (msg == 230) {
+	} else if (msg == NRPN_FEEDBACK) {
 		// Feedback
 		movedPot(KNOB_FEEDBACK, byte_val, 1);
-	} else if (msg == 231) {
+	} else if (msg == NRPN_ALGORITHM) {
 		// Algorithm
 		movedPot(KNOB_ALGO, byte_val, 1);
-	} else if (msg == 232) {
+	} else if (msg == NRPN_NOTE_PRIORITY) {
 		notePriority = byte_val;
 		setNotePriority();
-	} else if (msg == 300) {
+	} else if (msg == NRPN_ARP_MODE) {
 		if (byte_val < 8) {
 			arpMode = ArpMode(byte_val);
 			showArpMode();
 			resetVoices();
 		}
-	} else if (msg == 301) {
+	} else if (msg == NRPN_ARP_CLOCK_SYNC) {
 		arpClockEnable = bool_val;
 		setArpClock();
 		showOnOff(arpClockEnable);
-	} else if (msg == 302) {
+	} else if (msg == NRPN_ARP_RATE) {
 		// Arp Rate
 		movedPot(KNOB_ARP_RATE, byte_val, 1);
-	} else if (msg == 303) {
+	} else if (msg == NRPN_ARP_RANGE) {
 		// Arp Range
 		movedPot(KNOB_ARP_RANGE, byte_val, 1);
-	} else if (msg == 500) {
+	} else if (msg == NRPN_VIB_CLOCK_SYNC) {
 		vibratoClockEnable = bool_val;
 		setVibratoClock();
 		showOnOff(vibratoClockEnable);
-	} else if (msg == 501) {
+	} else if (msg == NRPN_VIB_RATE) {
 		// Vibrato Rate
 		movedPot(KNOB_VIB_RATE, byte_val, 1);
-	} else if (msg == 502) {
+	} else if (msg == NRPN_VIB_DEPTH) {
 		// Vibrato Depth
 		movedPot(KNOB_VIB_DEPTH, byte_val, 1);
-	} else if ((msg >= 1000) &&  (msg <= 1002)) {
+	} else if ((msg >= NRPN_LFO_LINK) && (msg <= NRPN_LFO_LINK + 2)) {
 		// Link LFO to target
 		// msg 1000 = LFO1, 1001 = LFO2, 1002 = LFO3
 		//
@@ -1119,43 +1162,43 @@ void handleNRPN(int msg, int int_val) {
 		// val is 2 or 3: target pot 1
 		//
 		// So to link to pot 10, val should be 21 (10*2 + 1) and to unlink it val should be 20 (10*2 + 0)12
-		byte lfo = msg - 1000;
-		bool isLinked = bitRead(byte_val, 0);
+		byte lfo = msg - NRPN_LFO_LINK;
+		bool isLinked = byte_val & 1;
 		byte targetPot = byte_val >> 1;
 		if (targetPot < 51) {
 			linked[lfo][targetPot] = isLinked;
 			showLink();
 		}
-	} else if (msg == 2000) {
+	} else if (msg == NRPN_OP1_BASE + NRPN_OP_DETUNE) {
 		// Operator 1 Detune
 		movedPot(FADER_DETUNE_1, byte_val, 1);
-	} else if (msg == 2001) {
+	} else if (msg == NRPN_OP1_BASE + NRPN_OP_MULT) {
 		// Operator 1 Multiplier
 		movedPot(FADER_MULT_1, byte_val, 1);
-	} else if (msg == 2002) {
+	} else if (msg == NRPN_OP1_BASE + NRPN_OP_LEVEL) {
 		// Operator 1 Level
 		movedPot(FADER_LEVEL_1, byte_val, 1);
-	} else if (msg == 2003) {
+	} else if (msg == NRPN_OP1_BASE + NRPN_OP_ATTACK) {
 		// Operator 1 Attack
 		movedPot(FADER_ATTACK_1, byte_val, 1);
-	} else if (msg == 2004) {
+	} else if (msg == NRPN_OP1_BASE + NRPN_OP_DECAY) {
 		// Operator 1 Decay Rate
 		movedPot(FADER_DECAY_1, byte_val, 1);
-	} else if (msg == 2005) {
+	} else if (msg == NRPN_OP1_BASE + NRPN_OP_SUSTAIN_LVL) {
 		// Operator 1 Sustain Level
 		movedPot(FADER_SUSTAIN_1, byte_val, 1);
-	} else if (msg == 2006) {
+	} else if (msg == NRPN_OP1_BASE + NRPN_OP_SUSTAIN_RATE) {
 		// Operator 1 Sustain Rate
 		movedPot(FADER_SUSTAIN_RATE_1, byte_val, 1);
-	} else if (msg == 2007) {
+	} else if (msg == NRPN_OP1_BASE + NRPN_OP_RELEASE) {
 		// Operator 1 Release Rate
 		movedPot(FADER_RELEASE_1, byte_val, 1);
-	} else if (msg == 2008) {
+	} else if (msg == NRPN_OP1_BASE + NRPN_OP_ENV_MODE) {
 		// Set envelope mode for operator 1, 0-2 = (off, forward, ping pong)
 		if (byte_val < 3) {
 			setOperatorEnvelopeMode(0, kEnvelopeMode(byte_val));
 		}
-	} else if (msg == 2009) {
+	} else if (msg == NRPN_OP1_BASE + NRPN_OP_RATE_SCALE) {
 		// Set rate scaling for operators 1 (0-3)
 		// if (byte_val < 4) {
 		// 	updateFMifNecessary(3);
@@ -1165,36 +1208,36 @@ void handleNRPN(int msg, int int_val) {
 		loopHeld = true;
 		movedPot(FADER_DETUNE_1, byte_val, 1);
 		loopHeld = false;
-	} else if (msg == 3000) {
+	} else if (msg == NRPN_OP2_BASE + NRPN_OP_DETUNE) {
 		// Operator 2 Detune
 		movedPot(FADER_DETUNE_2, byte_val, 1);
-	} else if (msg == 3001) {
+	} else if (msg == NRPN_OP2_BASE + NRPN_OP_MULT) {
 		// Operator 2 Multiplier
 		movedPot(FADER_MULT_2, byte_val, 1);
-	} else if (msg == 3002) {
+	} else if (msg == NRPN_OP2_BASE + NRPN_OP_LEVEL) {
 		// Operator 2 Level
 		movedPot(FADER_LEVEL_2, byte_val, 1);
-	} else if (msg == 3003) {
+	} else if (msg == NRPN_OP2_BASE + NRPN_OP_ATTACK) {
 		// Operator 2 Attack
 		movedPot(FADER_ATTACK_2, byte_val, 1);
-	} else if (msg == 3004) {
+	} else if (msg == NRPN_OP2_BASE + NRPN_OP_DECAY) {
 		// Operator 2 Decay Rate
 		movedPot(FADER_DECAY_2, byte_val, 1);
-	} else if (msg == 3005) {
+	} else if (msg == NRPN_OP2_BASE + NRPN_OP_SUSTAIN_LVL) {
 		// Operator 2 Sustain Level
 		movedPot(FADER_SUSTAIN_2, byte_val, 1);
-	} else if (msg == 3006) {
+	} else if (msg == NRPN_OP2_BASE + NRPN_OP_SUSTAIN_RATE) {
 		// Operator 2 Sustain Rate
 		movedPot(FADER_SUSTAIN_RATE_2, byte_val, 1);
-	} else if (msg == 3007) {
+	} else if (msg == NRPN_OP2_BASE + NRPN_OP_RELEASE) {
 		// Operator 2 Release Rate
 		movedPot(FADER_RELEASE_2, byte_val, 1);
-	} else if (msg == 3008) {
+	} else if (msg == NRPN_OP2_BASE + NRPN_OP_ENV_MODE) {
 		// Set envelope mode for operator 2, 0-2 = (off, forward, ping pong)
 		if (byte_val < 3) {
 			setOperatorEnvelopeMode(1, kEnvelopeMode(byte_val));
 		}
-	} else if (msg == 3009) {
+	} else if (msg == NRPN_OP2_BASE + NRPN_OP_RATE_SCALE) {
 		// Set rate scaling for operators 2 (0-3)
 		// if (byte_val < 4) {
 		// 	updateFMifNecessary(12);
@@ -1204,36 +1247,36 @@ void handleNRPN(int msg, int int_val) {
 		loopHeld = true;
 		movedPot(FADER_DETUNE_2, byte_val, 1);
 		loopHeld = false;
-	} else if (msg == 4000) {
+	} else if (msg == NRPN_OP3_BASE + NRPN_OP_DETUNE) {
 		// Operator 3 Detune
 		movedPot(FADER_DETUNE_3, byte_val, 1);
-	} else if (msg == 4001) {
+	} else if (msg == NRPN_OP3_BASE + NRPN_OP_MULT) {
 		// Operator 3 Multiplier
 		movedPot(FADER_MULT_3, byte_val, 1);
-	} else if (msg == 4002) {
+	} else if (msg == NRPN_OP3_BASE + NRPN_OP_LEVEL) {
 		// Operator 3 Level
 		movedPot(FADER_LEVEL_3, byte_val, 1);
-	} else if (msg == 4003) {
+	} else if (msg == NRPN_OP3_BASE + NRPN_OP_ATTACK) {
 		// Operator 3 Attack
 		movedPot(FADER_ATTACK_3, byte_val, 1);
-	} else if (msg == 4004) {
+	} else if (msg == NRPN_OP3_BASE + NRPN_OP_DECAY) {
 		// Operator 3 Decay Rate
 		movedPot(FADER_DECAY_3, byte_val, 1);
-	} else if (msg == 4005) {
+	} else if (msg == NRPN_OP3_BASE + NRPN_OP_SUSTAIN_LVL) {
 		// Operator 3 Sustain Level
 		movedPot(FADER_SUSTAIN_3, byte_val, 1);
-	} else if (msg == 4006) {
+	} else if (msg == NRPN_OP3_BASE + NRPN_OP_SUSTAIN_RATE) {
 		// Operator 3 Sustain Rate
 		movedPot(FADER_SUSTAIN_RATE_3, byte_val, 1);
-	} else if (msg == 4007) {
+	} else if (msg == NRPN_OP3_BASE + NRPN_OP_RELEASE) {
 		// Operator 3 Release Rate
 		movedPot(FADER_RELEASE_3, byte_val, 1);
-	} else if (msg == 4008) {
+	} else if (msg == NRPN_OP3_BASE + NRPN_OP_ENV_MODE) {
 		// Set envelope mode for operator 3, 0-2 = (off, forward, ping pong)
 		if (byte_val < 3) {
 			setOperatorEnvelopeMode(2, kEnvelopeMode(byte_val));
 		}
-	} else if (msg == 4009) {
+	} else if (msg == NRPN_OP3_BASE + NRPN_OP_RATE_SCALE) {
 		// Set rate scaling for operators 3 (0-3)
 		// if (byte_val < 4) {
 		// 	updateFMifNecessary(21);
@@ -1243,36 +1286,36 @@ void handleNRPN(int msg, int int_val) {
 		loopHeld = true;
 		movedPot(FADER_DETUNE_3, byte_val, 1);
 		loopHeld = false;
-	} else if (msg == 5000) {
+	} else if (msg == NRPN_OP4_BASE + NRPN_OP_DETUNE) {
 		// Operator 4 Detune
 		movedPot(FADER_DETUNE_4, byte_val, 1);
-	} else if (msg == 5001) {
+	} else if (msg == NRPN_OP4_BASE + NRPN_OP_MULT) {
 		// Operator 4 Multiplier
 		movedPot(FADER_MULT_4, byte_val, 1);
-	} else if (msg == 5002) {
+	} else if (msg == NRPN_OP4_BASE + NRPN_OP_LEVEL) {
 		// Operator 4 Level
 		movedPot(FADER_LEVEL_4, byte_val, 1);
-	} else if (msg == 5003) {
+	} else if (msg == NRPN_OP4_BASE + NRPN_OP_ATTACK) {
 		// Operator 4 Attack
 		movedPot(FADER_ATTACK_4, byte_val, 1);
-	} else if (msg == 5004) {
+	} else if (msg == NRPN_OP4_BASE + NRPN_OP_DECAY) {
 		// Operator 4 Decay Rate
 		movedPot(FADER_DECAY_4, byte_val, 1);
-	} else if (msg == 5005) {
+	} else if (msg == NRPN_OP4_BASE + NRPN_OP_SUSTAIN_LVL) {
 		// Operator 4 Sustain Level
 		movedPot(FADER_SUSTAIN_4, byte_val, 1);
-	} else if (msg == 5006) {
+	} else if (msg == NRPN_OP4_BASE + NRPN_OP_SUSTAIN_RATE) {
 		// Operator 4 Sustain Rate
 		movedPot(FADER_SUSTAIN_RATE_4, byte_val, 1);
-	} else if (msg == 5007) {
+	} else if (msg == NRPN_OP4_BASE + NRPN_OP_RELEASE) {
 		// Operator 4 Release Rate
 		movedPot(FADER_RELEASE_4, byte_val, 1);
-	} else if (msg == 5008) {
+	} else if (msg == NRPN_OP4_BASE + NRPN_OP_ENV_MODE) {
 		// Set envelope mode for operator 4, 0-2 = (off, forward, ping pong)
 		if (byte_val < 3) {
 			setOperatorEnvelopeMode(3, kEnvelopeMode(byte_val));
 		}
-	} else if (msg == 5009) {
+	} else if (msg == NRPN_OP4_BASE + NRPN_OP_RATE_SCALE) {
 		// Set rate scaling for operators 4 (0-3)
 		// if (byte_val < 4) {
 		// 	updateFMifNecessary(30);
@@ -1282,12 +1325,25 @@ void handleNRPN(int msg, int int_val) {
 		loopHeld = true;
 		movedPot(FADER_DETUNE_4, byte_val, 1);
 		loopHeld = false;
-	} 
-}
+	}
 
+	// Update the deduplication cache with the received value so that a subsequent
+	// sendNRPN() with the same value is suppressed — prevents echoing a received
+	// message back to the sender (e.g. DAW sends NRPN → firmware applies it →
+	// dumpPreset() would re-send the same value without this guard).
+	int idx = nrpnIndex(msg);
+	if (idx >= 0)
+		lastNRPN[idx] = int_val;
+}
 
 void HandleControlChange(byte channel, byte number, byte val) {
 	byte temp;
+
+	// Update the deduplication cache with the received value so that a subsequent
+	// sendCC() with the same value is suppressed — prevents echoing a received
+	// message back to the sender.
+	if (number < 80)
+		lastCC[number] = val;
 
 	if (number == 74) {
 
@@ -1491,10 +1547,9 @@ void HandleControlChange(byte channel, byte number, byte val) {
 		if ((lastSentCC[0] == number) && (lastSentCC[1] == val)) {
 			// ignore same CC and DATA as sent to avoid feedback
 		} else {
-			
 
 			leftDot();
-			
+
 			if (number == 64) {
 				if (mpe) {
 					for (int ch = 0; ch < 16; ch++)
@@ -1524,7 +1579,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 						}
 					}
 				} else if (number == 99) {
-				// NRPN BEGIN ////////////////////////////////////
+					// NRPN BEGIN ////////////////////////////////////
 					nrpn_msg = val;
 					nrpn_state = 1;
 				} else if ((number == 98) && (nrpn_state == 1)) {
@@ -1540,7 +1595,7 @@ void HandleControlChange(byte channel, byte number, byte val) {
 					nrpn_msg = 0;
 					nrpn_data = 0;
 					nrpn_state = 0;
-				// NRPN DONE //////////////////////////////////////
+					// NRPN DONE //////////////////////////////////////
 				} else {
 					byte pot = number;
 					// Rewrite CC -> POT for some
@@ -1563,166 +1618,316 @@ void HandleControlChange(byte channel, byte number, byte val) {
 }
 
 void dumpPreset() {
+	for (int number = 0; number < 58; number++) {
+		switch (number) {
+			// OP1
+			case 18:
+				sendCC(number, fmBase[0] >> 1);
+				break; // detune
+			case 27:
+				sendCC(number, fmBase[1] >> 1);
+				break; // multiple
+			case 19:
+				sendCC(number, fmBase[2] >> 1);
+				break; // op level
+			case 29:
+				sendCC(number, fmBase[4] >> 1);
+				break; // attack
+			case 21:
+				sendCC(number, fmBase[5] >> 1);
+				break; // decay1
+			case 25:
+				sendCC(number, fmBase[7] >> 1);
+				break; // sustain
+			case 17:
+				sendCC(number, fmBase[6] >> 1);
+				break; // sustain rate
+			case 30:
+				sendCC(number, fmBase[8] >> 1);
+				break; // release
+			// OP2
+			case 31:
+				sendCC(number, fmBase[18] >> 1);
+				break; // detune
+			case 32:
+				sendCC(number, fmBase[19] >> 1);
+				break; // multiple
+			case 40:
+				sendCC(number, fmBase[20] >> 1);
+				break; // op level
+			case 36:
+				sendCC(number, fmBase[22] >> 1);
+				break; // attack
+			case 44:
+				sendCC(number, fmBase[23] >> 1);
+				break; // decay1
+			case 42:
+				sendCC(number, fmBase[25] >> 1);
+				break; // sustain
+			case 34:
+				sendCC(number, fmBase[24] >> 1);
+				break; // sustain rate
+			case 11:
+				sendCC(number, fmBase[26] >> 1);
+				break; // release
+			// OP3
+			case 20:
+				sendCC(number, fmBase[9] >> 1);
+				break; // detune
+			case 24:
+				sendCC(number, fmBase[10] >> 1);
+				break; // multiple
+			case 16:
+				sendCC(number, fmBase[11] >> 1);
+				break; // op level
+			case 8:
+				sendCC(49, fmBase[13] >> 1);
+				break; // attack
+			case 0:
+				sendCC(50, fmBase[14] >> 1);
+				break; // decay1
+			case 7:
+				sendCC(51, fmBase[16] >> 1);
+				break; // sustain
+			case 45:
+				sendCC(number, fmBase[15] >> 1);
+				break; // sustain rate
+			case 37:
+				sendCC(number, fmBase[17] >> 1);
+				break; // release
+			// OP4
+			case 47:
+				sendCC(number, fmBase[27] >> 1);
+				break; // detune
+			case 39:
+				sendCC(number, fmBase[28] >> 1);
+				break; // multiple
+			case 38:
+				sendCC(number, fmBase[29] >> 1);
+				break; // op level
+			case 46:
+				sendCC(number, fmBase[31] >> 1);
+				break; // attack
+			case 33:
+				sendCC(number, fmBase[32] >> 1);
+				break; // decay1
+			case 41:
+				sendCC(number, fmBase[34] >> 1);
+				break; // sustain
+			case 43:
+				sendCC(number, fmBase[33] >> 1);
+				break; // sustain rate
+			case 35:
+				sendCC(number, fmBase[35] >> 1);
+				break; // release
+
+			case 1:
+				sendCC(7, vol >> 1);
+				break; // volume //SEND FINE!!!!!!!!!!!!
+			case 4:
+				sendCC(number, (1 + (fmBase[42] >> 5)));
+				break; // algo
+			case 3:
+				sendCC(number, fmBase[43] >> 1);
+				break; // feedback
+			case 28:
+				sendCC(number, fmBase[50] >> 1);
+				break; // fat 1-127 // SEND GLIDE!!!!!!!!!!!!
+			case 15:
+				sendCC(number, fmBase[36] >> 1);
+				break; // lfo 1 rate
+			case 12:
+				sendCC(number, fmBase[37] >> 1);
+				break; // lfo 1 depth
+			case 10:
+				sendCC(number, fmBase[38] >> 1);
+				break; // lfo 2 rate
+			case 9:
+				sendCC(number, fmBase[39] >> 1);
+				break; // lfo 2 depth
+			case 14:
+				sendCC(number, fmBase[40] >> 1);
+				break; // lfo 3 rate
+			case 2:
+				sendCC(number, fmBase[41] >> 1);
+				break; // lfo 3 depth
+			case 6:
+				sendCC(number, fmBase[46] >> 1);
+				break; /// arp rate
+			case 5:
+				sendCC(number, fmBase[47] >> 1);
+				break; // arp range
+			case 48:
+				sendCC(number, fmBase[48] >> 1);
+				break; // vibrato rate WAS 7
+			case 13:
+				sendCC(number, fmBase[49] >> 1);
+				break; // vibrato depth
+		}
+	}
+}
+
+void dumpPresetNRPN() {
 
 	for (int number = 0; number < 58; number++) {
 		switch (number) {
 			// OP1
 			case 18:
-				sendCCForce(number, fmBase[0] >> 1);
+				sendNRPN(NRPN_OP1_BASE + NRPN_OP_DETUNE, fmBase[0]);
 				break; // detune
 			case 27:
-				sendCCForce(number, fmBase[1] >> 1);
+				sendNRPN(NRPN_OP1_BASE + NRPN_OP_MULT, fmBase[1]);
 				break; // multiple
 			case 19:
-				sendCCForce(number, fmBase[2] >> 1);
+				sendNRPN(NRPN_OP1_BASE + NRPN_OP_LEVEL, fmBase[2]);
 				break; // op level
 			case 29:
-				sendCCForce(number, fmBase[4] >> 1);
+				sendNRPN(NRPN_OP1_BASE + NRPN_OP_ATTACK, fmBase[4]);
 				break; // attack
 			case 21:
-				sendCCForce(number, fmBase[5] >> 1);
+				sendNRPN(NRPN_OP1_BASE + NRPN_OP_DECAY, fmBase[5]);
 				break; // decay1
 			case 25:
-				sendCCForce(number, fmBase[7] >> 1);
+				sendNRPN(NRPN_OP1_BASE + NRPN_OP_SUSTAIN_LVL, fmBase[7]);
 				break; // sustain
 			case 17:
-				sendCCForce(number, fmBase[6] >> 1);
+				sendNRPN(NRPN_OP1_BASE + NRPN_OP_SUSTAIN_RATE, fmBase[6]);
 				break; // sustain rate
 			case 30:
-				sendCCForce(number, fmBase[8] >> 1);
+				sendNRPN(NRPN_OP1_BASE + NRPN_OP_RELEASE, fmBase[8]);
 				break; // release
 			// OP2
 			case 31:
-				sendCCForce(number, fmBase[18] >> 1);
+				sendNRPN(NRPN_OP2_BASE + NRPN_OP_DETUNE, fmBase[18]);
 				break; // detune
 			case 32:
-				sendCCForce(number, fmBase[19] >> 1);
+				sendNRPN(NRPN_OP2_BASE + NRPN_OP_MULT, fmBase[19]);
 				break; // multiple
 			case 40:
-				sendCCForce(number, fmBase[20] >> 1);
+				sendNRPN(NRPN_OP2_BASE + NRPN_OP_LEVEL, fmBase[20]);
 				break; // op level
 			case 36:
-				sendCCForce(number, fmBase[22] >> 1);
+				sendNRPN(NRPN_OP2_BASE + NRPN_OP_ATTACK, fmBase[22]);
 				break; // attack
 			case 44:
-				sendCCForce(number, fmBase[23] >> 1);
+				sendNRPN(NRPN_OP2_BASE + NRPN_OP_DECAY, fmBase[23]);
 				break; // decay1
 			case 42:
-				sendCCForce(number, fmBase[25] >> 1);
+				sendNRPN(NRPN_OP2_BASE + NRPN_OP_SUSTAIN_LVL, fmBase[25]);
 				break; // sustain
 			case 34:
-				sendCCForce(number, fmBase[24] >> 1);
+				sendNRPN(NRPN_OP2_BASE + NRPN_OP_SUSTAIN_RATE, fmBase[24]);
 				break; // sustain rate
 			case 11:
-				sendCCForce(number, fmBase[26] >> 1);
+				sendNRPN(NRPN_OP2_BASE + NRPN_OP_RELEASE, fmBase[26]);
 				break; // release
 			// OP3
 			case 20:
-				sendCCForce(number, fmBase[9] >> 1);
+				sendNRPN(NRPN_OP3_BASE + NRPN_OP_DETUNE, fmBase[9]);
 				break; // detune
 			case 24:
-				sendCCForce(number, fmBase[10] >> 1);
+				sendNRPN(NRPN_OP3_BASE + NRPN_OP_MULT, fmBase[10]);
 				break; // multiple
 			case 16:
-				sendCCForce(number, fmBase[11] >> 1);
+				sendNRPN(NRPN_OP3_BASE + NRPN_OP_LEVEL, fmBase[11]);
 				break; // op level
 			case 8:
-				sendCCForce(49, fmBase[13] >> 1);
+				sendNRPN(NRPN_OP3_BASE + NRPN_OP_ATTACK, fmBase[13]);
 				break; // attack
 			case 0:
-				sendCCForce(50, fmBase[14] >> 1);
+				sendNRPN(NRPN_OP3_BASE + NRPN_OP_DECAY, fmBase[14]);
 				break; // decay1
 			case 7:
-				sendCCForce(51, fmBase[16] >> 1);
+				sendNRPN(NRPN_OP3_BASE + NRPN_OP_SUSTAIN_LVL, fmBase[16]);
 				break; // sustain
 			case 45:
-				sendCCForce(number, fmBase[15] >> 1);
+				sendNRPN(NRPN_OP3_BASE + NRPN_OP_SUSTAIN_RATE, fmBase[15]);
 				break; // sustain rate
 			case 37:
-				sendCCForce(number, fmBase[17] >> 1);
+				sendNRPN(NRPN_OP3_BASE + NRPN_OP_RELEASE, fmBase[17]);
 				break; // release
 			// OP4
 			case 47:
-				sendCCForce(number, fmBase[27] >> 1);
+				sendNRPN(NRPN_OP4_BASE + NRPN_OP_DETUNE, fmBase[27]);
 				break; // detune
 			case 39:
-				sendCCForce(number, fmBase[28] >> 1);
+				sendNRPN(NRPN_OP4_BASE + NRPN_OP_MULT, fmBase[28]);
 				break; // multiple
 			case 38:
-				sendCCForce(number, fmBase[29] >> 1);
+				sendNRPN(NRPN_OP4_BASE + NRPN_OP_LEVEL, fmBase[29]);
 				break; // op level
 			case 46:
-				sendCCForce(number, fmBase[31] >> 1);
+				sendNRPN(NRPN_OP4_BASE + NRPN_OP_ATTACK, fmBase[31]);
 				break; // attack
 			case 33:
-				sendCCForce(number, fmBase[32] >> 1);
+				sendNRPN(NRPN_OP4_BASE + NRPN_OP_DECAY, fmBase[32]);
 				break; // decay1
 			case 41:
-				sendCCForce(number, fmBase[34] >> 1);
+				sendNRPN(NRPN_OP4_BASE + NRPN_OP_SUSTAIN_LVL, fmBase[34]);
 				break; // sustain
 			case 43:
-				sendCCForce(number, fmBase[33] >> 1);
+				sendNRPN(NRPN_OP4_BASE + NRPN_OP_SUSTAIN_RATE, fmBase[33]);
 				break; // sustain rate
 			case 35:
-				sendCCForce(number, fmBase[35] >> 1);
+				sendNRPN(NRPN_OP4_BASE + NRPN_OP_RELEASE, fmBase[35]);
 				break; // release
 
 			case 1:
-				sendCCForce(7, 128 - lastVol);
+				sendNRPN(NRPN_VOLUME, (128 - lastVol) << 1);
 				break; // volume
 			case 4:
-				sendCCForce(number, (1 + (fmBase[42] >> 5)));
+				sendNRPN(NRPN_ALGORITHM, fmBase[42]);
 				break; // algo
 			case 3:
-				sendCCForce(number, fmBase[43] >> 1);
+				sendNRPN(NRPN_FEEDBACK, fmBase[43]);
 				break; // feedback
 			case 28:
-				sendCCForce(number, fmBase[50] >> 1);
+				sendNRPN(NRPN_FAT, fmBase[50]);
 				break; // fat 1-127
 			case 15:
-				sendCCForce(number, fmBase[36] >> 1);
+				sendNRPN(NRPN_LFO1_RATE, fmBase[36]);
 				break; // lfo 1 rate
 			case 12:
-				sendCCForce(number, fmBase[37] >> 1);
+				sendNRPN(NRPN_LFO1_DEPTH, fmBase[37]);
 				break; // lfo 1 depth
 			case 10:
-				sendCCForce(number, fmBase[38] >> 1);
+				sendNRPN(NRPN_LFO2_RATE, fmBase[38]);
 				break; // lfo 2 rate
 			case 9:
-				sendCCForce(number, fmBase[39] >> 1);
+				sendNRPN(NRPN_LFO2_DEPTH, fmBase[39]);
 				break; // lfo 2 depth
 			case 14:
-				sendCCForce(number, fmBase[40] >> 1);
+				sendNRPN(NRPN_LFO3_RATE, fmBase[40]);
 				break; // lfo 3 rate
 			case 2:
-				sendCCForce(number, fmBase[41] >> 1);
+				sendNRPN(NRPN_LFO3_DEPTH, fmBase[41]);
 				break; // lfo 3 depth
 			case 6:
-				sendCCForce(number, fmBase[46] >> 1);
+				sendNRPN(NRPN_ARP_RATE, fmBase[46]);
 				break; /// arp rate
 			case 5:
-				sendCCForce(number, fmBase[47] >> 1);
+				sendNRPN(NRPN_ARP_RANGE, fmBase[47]);
 				break; // arp range
 			case 48:
-				sendCCForce(number, fmBase[48] >> 1);
+				sendNRPN(NRPN_VIB_RATE, fmBase[48]);
 				break; // vibrato rate WAS 7
 			case 13:
-				sendCCForce(number, fmBase[49] >> 1);
+				sendNRPN(NRPN_VIB_DEPTH, fmBase[49]);
 				break; // vibrato depth
 		}
 	}
 	// send other settings
-	sendCCForce(78, 20 + (fmBase[3] >> 6));           // op1 rate scaling
-	sendCCForce(78, 30 + (fmBase[12] >> 6));          // op2 rate scaling
-	sendCCForce(78, 40 + (fmBase[21] >> 6));          // op3 rate scaling
-	sendCCForce(78, 50 + (fmBase[30] >> 6));          // op4 rate scaling
-	sendCCForce(78, 25 + getOperatorEnvelopeMode(0)); // op1 envelope mode
-	sendCCForce(78, 35 + getOperatorEnvelopeMode(1)); // op2 envelope mode
-	sendCCForce(78, 45 + getOperatorEnvelopeMode(2)); // op3 envelope mode
-	sendCCForce(78, 55 + getOperatorEnvelopeMode(3)); // op4 envelope mode
-	sendCCForce(70, 56 + arpClockEnable);             // arp clock on/off
-	sendCCForce(70, 65 + vibratoClockEnable);         // vibrato clock on/off
-	sendCCForce(70, 85 + arpMode);
+	sendNRPN(NRPN_OP1_BASE + NRPN_OP_RATE_SCALE, fmBase[3]);                // op1 rate scaling
+	sendNRPN(NRPN_OP2_BASE + NRPN_OP_RATE_SCALE, fmBase[12]);               // op2 rate scaling
+	sendNRPN(NRPN_OP3_BASE + NRPN_OP_RATE_SCALE, fmBase[21]);               // op3 rate scaling
+	sendNRPN(NRPN_OP4_BASE + NRPN_OP_RATE_SCALE, fmBase[30]);               // op4 rate scaling
+	sendNRPN(NRPN_OP1_BASE + NRPN_OP_ENV_MODE, getOperatorEnvelopeMode(0)); // op1 envelope mode
+	sendNRPN(NRPN_OP2_BASE + NRPN_OP_ENV_MODE, getOperatorEnvelopeMode(1)); // op2 envelope mode
+	sendNRPN(NRPN_OP3_BASE + NRPN_OP_ENV_MODE, getOperatorEnvelopeMode(2)); // op3 envelope mode
+	sendNRPN(NRPN_OP4_BASE + NRPN_OP_ENV_MODE, getOperatorEnvelopeMode(3)); // op4 envelope mode
+	sendNRPN(NRPN_ARP_CLOCK_SYNC, arpClockEnable);                          // arp clock on/off
+	sendNRPN(NRPN_VIB_CLOCK_SYNC, vibratoClockEnable);                      // vibrato clock on/off
+	sendNRPN(NRPN_ARP_MODE, (byte)arpMode);                                 // arp mode
 
 	for (int i = 0; i < 3; i++) {
 		byte shape = lfoShape[i];
@@ -1737,36 +1942,243 @@ void dumpPreset() {
 			val = 5;
 			val += noiseTableLength[i] - 2; // 0 for 8 steps, 1 for 16 steps, 2 for 32 steps
 		}
-		sendCCForce(70, val + 16 * i);
-		sendCCForce(70, 8 + looping[i] + 16 * i);
-		sendCCForce(70, 6 + retrig[i] + 16 * i);
-		sendCCForce(70, 10 + 16 * i + lfoClockEnable[i]);
+		sendNRPN(NRPN_LFO_SHAPE + i, val);                    // LFO shape
+		sendNRPN(NRPN_LFO_LOOPING + i, looping[i]);           // LFO looping
+		sendNRPN(NRPN_LFO_RETRIG + i, retrig[i]);             // LFO retrig
+		sendNRPN(NRPN_LFO_CLOCK_SYNC + i, lfoClockEnable[i]); // LFO MIDI sync
 
 		for (int targetPot = 0; targetPot < 51; targetPot++)
 			// skip unused pots
 			if ((targetPot != 3) && (targetPot != 12) && (targetPot != 21) && (targetPot != 23) && (targetPot != 30) &&
 			    (targetPot != 45))
-				sendCCForce(71 + i, 2 * targetPot + linked[i][targetPot]);
+				sendNRPN(NRPN_LFO_LINK + i, (targetPot << 1) | linked[i][targetPot]); // LFO links
 	}
 
-	sendCCForce(70, 12 + lfoVel);
-	sendCCForce(70, 28 + lfoMod);
-	sendCCForce(70, 44 + lfoAt);
-	sendCCForce(70, 63 + fatMode);
-	sendCCForce(70, 58 + (1 - ignoreVolume));
-	sendCCForce(70, 69 + EEPROM.read(3965)); // brightness
+	sendNRPN(NRPN_LFO_VEL, lfoVel);
+	sendNRPN(NRPN_LFO_MOD, lfoMod);
+	sendNRPN(NRPN_LFO_AT, lfoAt);
+	sendNRPN(NRPN_SET_FAT_MODE, !fatMode);
+	sendNRPN(NRPN_SET_IGNORE_VOL, ignoreVolume);
+	sendNRPN(NRPN_SET_BRIGHTNESS, EEPROM.read(3965)); // brightness
 
-	sendCCForce(78, voiceMode);
-	sendCCForce(78, 10 + octOffset);
-	sendCCForce(75, glide << 3); // Todo: check
-	sendCCForce(76, fine >> 1);
+	sendNRPN(NRPN_SET_VOICE_MODE, (byte)voiceMode);
+	sendNRPN(NRPN_SET_OCT_OFFSET, octOffset);
+	sendNRPN(NRPN_GLIDE, glide << 4); // glide
+	sendNRPN(NRPN_FINE_TUNE, fine);   // fine tune
 
-	sendCCForce(70, 48 + thru);          // midi thru on/off
-	sendCCForce(70, 50 + pickupMode);    // pickup mode on/off
-	sendCCForce(70, 60 + notePriority);  // note priority
-	sendCCForce(70, 52 + stereoCh3);     // stereo ch3 on/off
-	sendCCForce(70, 54 + mpe);           // mpe mode on/off
-	sendCCForce(70, 67 + fatSpreadMode); // fat spread mode up/down or up/up
+	sendNRPN(NRPN_SET_MIDI_THRU, thru);           // midi thru on/off
+	sendNRPN(NRPN_SET_PICKUP_MODE, pickupMode);   // pickup mode on/off
+	sendNRPN(NRPN_NOTE_PRIORITY, notePriority);   // note priority
+	sendNRPN(NRPN_SET_STEREO_CH3, stereoCh3);     // stereo ch3 on/off
+	sendNRPN(NRPN_SET_MPE_MODE, mpe);             // mpe mode on/off
+	sendNRPN(NRPN_SET_FAT_SPREAD, fatSpreadMode); // fat spread mode up/down or up/up
+}
+
+// Helpers for streaming 8-bit payload bytes into the 7-bit SysEx encoding.
+// Every 7 payload bytes are packed into 8 encoded bytes: 1 LSB byte + 7 high-7-bit bytes.
+static byte sysexEncodeBuf[7];
+static int sysexEncodeBufLen = 0;
+
+static void sysexFlushBuf() {
+	if (sysexEncodeBufLen == 0)
+		return;
+	byte lsb = 0;
+	for (int j = 0; j < sysexEncodeBufLen; j++)
+		lsb |= (sysexEncodeBuf[j] & 1) << j;
+	Serial.write(lsb);
+	for (int j = 0; j < sysexEncodeBufLen; j++)
+		Serial.write(sysexEncodeBuf[j] >> 1);
+	sysexEncodeBufLen = 0;
+}
+
+static void sysexWriteByte(byte b) {
+	sysexEncodeBuf[sysexEncodeBufLen++] = b;
+	if (sysexEncodeBufLen == 7)
+		sysexFlushBuf();
+}
+
+// Encodes one NRPN message as 4 payload bytes matching the format handleSysExByte() expects:
+//   byte 0: msg >> 7   (CC99: parameter MSB)
+//   byte 1: msg & 0x7F (CC98: parameter LSB)
+//   byte 2: val & 0x7F (CC38: data LSB)
+//   byte 3: val >> 7   (CC6:  data MSB)
+static void sysexWriteNRPN(int msg, int val) {
+	sysexWriteByte(msg >> 7);
+	sysexWriteByte(msg & 0x7F);
+	sysexWriteByte(val & 0x7F);
+	sysexWriteByte(val >> 7);
+}
+
+void dumpPresetAsSysEx() {
+	if (thru)
+		return;
+
+	// Total NRPN count breakdown:
+	//   15  LFO settings (shape/looping/retrig/clock/vel-mod-at)
+	//   13  Knob parameters (fine, glide, LFO rates/depths, fat, volume, feedback, algo, notePriority)
+	//   10  Global settings (brightness, thru, pickup, stereoCh3, mpe, fatSpread, ignoreVol, fatMode, voiceMode,
+	//   octOffset)
+	//    4  Arp (mode, clock, rate, range)
+	//    3  Vibrato (clock, rate, depth)
+	//  135  LFO links (3 LFOs × 45 pots, skipping unused slots 3,12,21,23,30,45)
+	//   40  Operators (4 ops × 10 params each)
+	// ----
+	//  220  total
+	const int kNRPNCount = 220;
+	const int payloadLen = kNRPNCount * 4;
+
+	// SysEx header: F0 00 21 44 [command=91] [len_msb] [len_lsb]
+	Serial.write(0xF0);
+	Serial.write(0);
+	Serial.write(33);
+	Serial.write(68);
+	Serial.write(91);
+	Serial.write(payloadLen >> 7);
+	Serial.write(payloadLen & 0x7F);
+
+	sysexEncodeBufLen = 0;
+
+	// LFO shapes (100-102)
+	for (int i = 0; i < 3; i++) {
+		byte shape = lfoShape[i];
+		byte val;
+		if (shape == kSquare)
+			val = invertedSquare[i] ? 1 : 0;
+		else if (shape == kTriangle)
+			val = 2;
+		else if (shape == kSaw)
+			val = 3 + (invertedSaw[i] ? 1 : 0);
+		else // kRandom
+			val = 5 + (noiseTableLength[i] - 2);
+		sysexWriteNRPN(100 + i, val);
+	}
+
+	// LFO looping (103-105), retrig (106-108), MIDI sync (109-111)
+	for (int i = 0; i < 3; i++)
+		sysexWriteNRPN(103 + i, looping[i]);
+	for (int i = 0; i < 3; i++)
+		sysexWriteNRPN(106 + i, retrig[i]);
+	for (int i = 0; i < 3; i++)
+		sysexWriteNRPN(109 + i, lfoClockEnable[i]);
+
+	// LFO vel/mod/at (112-114)
+	sysexWriteNRPN(112, lfoVel);
+	sysexWriteNRPN(113, lfoMod);
+	sysexWriteNRPN(114, lfoAt);
+
+	// Fine tune (220) and Glide (221)
+	// fine is 0-255; movedPot(KNOB_VOLUME, fine) with voiceHeld restores it directly.
+	// glide is 0-15; movedPot(KNOB_FAT, glide<<4) with voiceHeld restores it (glide = data>>4).
+	sysexWriteNRPN(220, fine);
+	sysexWriteNRPN(221, glide << 4);
+
+	// LFO rates and depths
+	sysexWriteNRPN(222, fmBase[36]); // LFO1 rate
+	sysexWriteNRPN(223, fmBase[38]); // LFO2 rate
+	sysexWriteNRPN(224, fmBase[40]); // LFO3 rate
+	sysexWriteNRPN(225, fmBase[37]); // LFO1 depth
+	sysexWriteNRPN(226, fmBase[39]); // LFO2 depth
+	sysexWriteNRPN(227, fmBase[41]); // LFO3 depth
+
+	// Fat, Volume, Feedback, Algorithm
+	// volume: movedPot(KNOB_VOLUME, data) stores lastVol = 128-(data>>1), so data = (128-lastVol)<<1
+	sysexWriteNRPN(228, fmBase[50]);
+	sysexWriteNRPN(229, (128 - lastVol) << 1);
+	sysexWriteNRPN(230, fmBase[43]);
+	sysexWriteNRPN(231, fmBase[42]);
+
+	// Note priority
+	sysexWriteNRPN(232, notePriority);
+
+	// Global settings
+	sysexWriteNRPN(200, EEPROM.read(3965)); // brightness (0-15)
+	sysexWriteNRPN(201, thru);              // MIDI thru
+	sysexWriteNRPN(202, pickupMode);        // pickup mode
+	sysexWriteNRPN(203, stereoCh3);         // stereo ch3
+	sysexWriteNRPN(204, mpe);               // MPE mode
+	sysexWriteNRPN(205, fatSpreadMode);     // fat spread mode
+	sysexWriteNRPN(206, ignoreVolume);      // ignore preset volume
+	// fatMode: FAT_MODE_SEMITONE=false, FAT_MODE_OCTAVE=true.
+	// NRPN 207 handler: bool_val=true → semitone, bool_val=false → octave. So send !fatMode.
+	sysexWriteNRPN(207, !fatMode);
+	sysexWriteNRPN(208, (byte)voiceMode); // voice mode (0-5)
+	sysexWriteNRPN(209, octOffset);       // octave offset (0-3)
+
+	// Arp
+	sysexWriteNRPN(300, (byte)arpMode);  // arp mode (0-7)
+	sysexWriteNRPN(301, arpClockEnable); // arp MIDI clock sync
+	sysexWriteNRPN(302, fmBase[46]);     // arp rate
+	sysexWriteNRPN(303, fmBase[47]);     // arp range
+
+	// Vibrato
+	sysexWriteNRPN(500, vibratoClockEnable); // vibrato MIDI clock sync
+	sysexWriteNRPN(501, fmBase[48]);         // vibrato rate
+	sysexWriteNRPN(502, fmBase[49]);         // vibrato depth
+
+	// LFO links (1000-1002): one NRPN per (lfo, targetPot), value = (targetPot<<1)|linked
+	for (int i = 0; i < 3; i++) {
+		for (int targetPot = 0; targetPot < 51; targetPot++) {
+			if ((targetPot != 3) && (targetPot != 12) && (targetPot != 21) && (targetPot != 23) && (targetPot != 30) &&
+			    (targetPot != 45))
+				sysexWriteNRPN(1000 + i, (targetPot << 1) | linked[i][targetPot]);
+		}
+	}
+
+	// Operator 1 (2000-2009)
+	sysexWriteNRPN(2000, fmBase[0]);                  // detune
+	sysexWriteNRPN(2001, fmBase[1]);                  // multiple
+	sysexWriteNRPN(2002, fmBase[2]);                  // level
+	sysexWriteNRPN(2003, fmBase[4]);                  // attack
+	sysexWriteNRPN(2004, fmBase[5]);                  // decay
+	sysexWriteNRPN(2005, fmBase[7]);                  // sustain
+	sysexWriteNRPN(2006, fmBase[6]);                  // sustain rate
+	sysexWriteNRPN(2007, fmBase[8]);                  // release
+	sysexWriteNRPN(2008, getOperatorEnvelopeMode(0)); // envelope mode (0-2)
+	sysexWriteNRPN(2009, fmBase[3]);                  // rate scaling (raw: 0,64,128,192)
+
+	// Operator 2 (3000-3009)
+	sysexWriteNRPN(3000, fmBase[18]);                 // detune
+	sysexWriteNRPN(3001, fmBase[19]);                 // multiple
+	sysexWriteNRPN(3002, fmBase[20]);                 // level
+	sysexWriteNRPN(3003, fmBase[22]);                 // attack
+	sysexWriteNRPN(3004, fmBase[23]);                 // decay
+	sysexWriteNRPN(3005, fmBase[25]);                 // sustain
+	sysexWriteNRPN(3006, fmBase[24]);                 // sustain rate
+	sysexWriteNRPN(3007, fmBase[26]);                 // release
+	sysexWriteNRPN(3008, getOperatorEnvelopeMode(1)); // envelope mode (0-2)
+	sysexWriteNRPN(3009, fmBase[12]);                 // rate scaling (raw: 0,64,128,192)
+
+	// Operator 3 (4000-4009)
+	sysexWriteNRPN(4000, fmBase[9]);                  // detune
+	sysexWriteNRPN(4001, fmBase[10]);                 // multiple
+	sysexWriteNRPN(4002, fmBase[11]);                 // level
+	sysexWriteNRPN(4003, fmBase[13]);                 // attack
+	sysexWriteNRPN(4004, fmBase[14]);                 // decay
+	sysexWriteNRPN(4005, fmBase[16]);                 // sustain
+	sysexWriteNRPN(4006, fmBase[15]);                 // sustain rate
+	sysexWriteNRPN(4007, fmBase[17]);                 // release
+	sysexWriteNRPN(4008, getOperatorEnvelopeMode(2)); // envelope mode (0-2)
+	sysexWriteNRPN(4009, fmBase[21]);                 // rate scaling (raw: 0,64,128,192)
+
+	// Operator 4 (5000-5009)
+	sysexWriteNRPN(5000, fmBase[27]);                 // detune
+	sysexWriteNRPN(5001, fmBase[28]);                 // multiple
+	sysexWriteNRPN(5002, fmBase[29]);                 // level
+	sysexWriteNRPN(5003, fmBase[31]);                 // attack
+	sysexWriteNRPN(5004, fmBase[32]);                 // decay
+	sysexWriteNRPN(5005, fmBase[34]);                 // sustain
+	sysexWriteNRPN(5006, fmBase[33]);                 // sustain rate
+	sysexWriteNRPN(5007, fmBase[35]);                 // release
+	sysexWriteNRPN(5008, getOperatorEnvelopeMode(3)); // envelope mode (0-2)
+	sysexWriteNRPN(5009, fmBase[30]);                 // rate scaling (raw: 0,64,128,192)
+
+	sysexFlushBuf();
+	Serial.write(0xF7); // SysEx end
+
+	digit(0, 14); // P
+	digit(1, 21); // blank
+	lastNumber = -1;
+	showPresetNumberTimeout = 12000;
 }
 
 static byte mStatus;
@@ -1830,19 +2242,19 @@ void handleSysExByte(byte command, byte b) {
 		//   byte 2: CC 38 value (NRPN data LSB)
 		//   byte 3: CC  6 value (NRPN data MSB)
 		switch (sysExNrpnState) {
-			case 0:  // CC 99: parameter MSB
+			case 0: // CC 99: parameter MSB
 				sysExNrpnMsg = b;
 				sysExNrpnState = 1;
 				break;
-			case 1:  // CC 98: parameter LSB
+			case 1: // CC 98: parameter LSB
 				sysExNrpnMsg = (sysExNrpnMsg << 7) | b;
 				sysExNrpnState = 2;
 				break;
-			case 2:  // CC 38: data LSB
+			case 2: // CC 38: data LSB
 				sysExNrpnData = b;
 				sysExNrpnState = 3;
 				break;
-			case 3:  // CC 6: data MSB
+			case 3: // CC 6: data MSB
 				sysExNrpnData = (b << 7) | sysExNrpnData;
 				handleNRPN(sysExNrpnMsg, sysExNrpnData);
 				resetSysExByteState();
@@ -1885,7 +2297,7 @@ void handleSysEx() {
 	// Decoding: byte[j] = (encoded[j] << 1) | ((lsb_bits >> j) & 1)
 
 	mStatus = 0;
-	mData = 0;	
+	mData = 0;
 
 	// Need at least 3 manufacturer + 1 command + 2 length bytes
 	if (sysExDataIndex < 6) {
@@ -1902,8 +2314,8 @@ void handleSysEx() {
 			abortSysEx(true);
 			return;
 		} else {
-			digit(0, 14); // P
-			digit(1, 21); // blank
+			digit(0, 5); // S for "SysEx"
+			digit(1, 0); // Step 0
 		}
 	}
 
@@ -1911,14 +2323,19 @@ void handleSysEx() {
 
 	resetSysExByteState();
 
-	for (int i = 0; i < length; ) {
-		if (offset >= sysExDataIndex) break;
+	for (int i = 0; i < length;) {
+		if (offset >= sysExDataIndex)
+			break;
 		byte lsb_bits = sysExData[offset++];
 		for (int j = 0; j < 7 && i < length; j++, i++) {
-			if (offset >= sysExDataIndex) break;
+			if (offset >= sysExDataIndex)
+				break;
 			byte b = (sysExData[offset++] << 1) | ((lsb_bits >> j) & 1);
 			handleSysExByte(command, b);
 		}
+		// Show progress in digit 1 as %X0 of length bytes processed (10-90)
+		int progress = i / length * 10;
+		digit(1, progress);
 	}
 
 	lastNumber = -1;
@@ -1936,7 +2353,7 @@ void midiRead() {
 
 		if (input > 127) {
 			// Status
-			if ((mStatus == 8) && (input == 247))  {  // input == F7
+			if ((mStatus == 8) && (input == 247)) { // input == F7
 				// In SysEx and receivd Sysex end; handle data and end sysex mode
 				handleSysEx();
 				abortSysEx(false);
@@ -2045,7 +2462,6 @@ void midiRead() {
 						}
 						mData = 255;
 
-
 						break; // noteOn
 					case 2:
 
@@ -2084,8 +2500,8 @@ void midiRead() {
 						break;
 					case 8:
 						if (sysExDataIndex == 3) {
-							// check if it's a SysEx message for us ( - we do the same as the firmware and take the default 
-							// from hex2sys = \x00\x21\x44 = 00 33 68)
+							// check if it's a SysEx message for us ( - we do the same as the firmware and take the
+							// default from hex2sys = \x00\x21\x44 = 00 33 68)
 							if (sysExData[0] != 0 || sysExData[1] != 33 || sysExData[2] != 68) {
 								// not for us, ignore the rest of the message
 								abortSysEx(true);

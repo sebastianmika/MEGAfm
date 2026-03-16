@@ -5,6 +5,7 @@
 #include "pickup.h"
 #include "FM.h"
 #include "midi.h"
+#include "nrpn.h"
 #include "pitchEngine.h"
 #include "lfo.h"
 #include "loop.h"

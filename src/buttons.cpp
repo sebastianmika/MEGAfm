@@ -7,6 +7,7 @@
 #include "dump.h"
 #include "lfo.h"
 #include "midi.h"
+#include "nrpn.h"
 #include "voice.h"
 #include "FM.h"
 

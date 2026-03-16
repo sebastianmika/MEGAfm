@@ -195,8 +195,6 @@ void fillRandomLfo(byte number) {
 	}
 }
 
-void lfoLedOn() { ledSet(LED_SQUARE + lfoShape[selectedLfo], 1); }
-
 void fillAllLfoTables() {
 	for (int i = 0; i < 32; i++) {
 		lfoRandom[0][i] = random(255);

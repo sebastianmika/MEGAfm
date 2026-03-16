@@ -873,3 +873,19 @@ void ledSet(byte number, bool value) {
 			break;
 	}
 }
+
+void showOnOff(bool on) {
+	if (on) {
+		// On
+		digit(0, 0);
+		digit(1, 19);
+	} else {
+		// OF
+		digit(0, 0);
+		digit(1, 12);
+	}
+	lastNumber = -1;
+	showPresetNumberTimeout = 12000;
+}
+
+void lfoLedOn() { ledSet(LED_SQUARE + lfoShape[selectedLfo], 1); }

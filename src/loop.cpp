@@ -4,6 +4,7 @@
 #include "lfo.h"
 #include "leds.h"
 #include "midi.h"
+#include "nrpn.h"
 #include "volume.h"
 #include "pitchEngine.h"
 #include "mux.h"
@@ -268,7 +269,7 @@ void loop() {
 		if (arpButtCounter > 3999) {
 			arpButtCounter = 0;
 			arpMode = kArpOff;
-			sendCC(70, 85 + arpMode);
+			sendNRPN(NRPN_ARP_MODE, arpMode);
 			resetVoices();
 
 			ledSet(LED_ARP_MODE, 0);

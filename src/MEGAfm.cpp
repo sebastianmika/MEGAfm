@@ -16,6 +16,7 @@ cd /Users/a/Documents/bootloaderT cd /Users/a/Documents/bootloaderT&&cp -f /priv
 #include "isr.h"
 #include "preset.h"
 #include "midi.h"
+#include "nrpn.h"
 
 // check that we didn't do a rec+voicing before latching arp rec mode
 bool newWide; // enable new wide modes
@@ -370,6 +371,7 @@ void setup() {
 	// midiSetup();
 
 	initLastCC();
+	initLastNRPN();
 
 	mux(13);
 	if ((!digitalRead(A1)) ||

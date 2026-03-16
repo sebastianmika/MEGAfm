@@ -25,5 +25,6 @@ void midiRead();
 void initLastCC();
 void setOperatorEnvelopeMode(byte op, kEnvelopeMode mode);
 kEnvelopeMode getOperatorEnvelopeMode(byte op);
+void resetMidiReadStatus();
 
 #endif // MEGAFM_CMAKE_MIDI_H

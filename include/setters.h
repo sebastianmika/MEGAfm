@@ -22,5 +22,4 @@ void setOperatorEnvelopeMode(byte op, kEnvelopeMode mode);
 kEnvelopeMode getOperatorEnvelopeMode(byte op);
 void setLFOShape(byte lfo, byte value);
 
-
 #endif // MEGAFM_CMAKE_SETTERS_H

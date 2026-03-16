@@ -89,7 +89,7 @@ void handleSysExByte(byte command, byte b) {
 }
 
 void abortSysEx(bool error) {
-    resetMidiReadStatus();
+	resetMidiReadStatus();
 	sysExDataIndex = 0;
 	resetSysExByteState();
 	if (error) {
@@ -120,7 +120,7 @@ void handleSysEx() {
 	//
 	// Decoding: byte[j] = (encoded[j] << 1) | ((lsb_bits >> j) & 1)
 
-    resetMidiReadStatus();
+	resetMidiReadStatus();
 
 	// Need at least 3 manufacturer + 1 command + 2 length bytes
 	if (sysExDataIndex < 6) {
@@ -165,7 +165,6 @@ void handleSysEx() {
 	showPresetNumberTimeout = 12000;
 	sysExDataIndex = 0;
 }
-
 
 void dumpPresetAsSysEx() {
 	if (thru)

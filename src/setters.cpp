@@ -157,4 +157,3 @@ void setLFOShape(byte lfo, byte value) {
 	}
 	showLfoWaveform(lfo);
 }
-

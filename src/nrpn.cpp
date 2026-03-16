@@ -10,7 +10,6 @@
 #include "nrpn.h"
 #include "setters.h"
 
-
 int nrpn_msg = 0;
 int nrpn_data = 0;
 byte nrpn_state = 0;
@@ -69,7 +68,7 @@ void sendNRPN(int msg, int value) {
 
 void handleNRPN(int msg, int int_val) {
 	// NRPN values are sent as 14 bit values, but we only mostly only use the lower 8 bits
-	byte byte_val = (byte) int_val;
+	byte byte_val = (byte)int_val;
 	bool bool_val = (int_val > 0);
 
 	if ((msg >= NRPN_LFO_SHAPE) && (msg <= NRPN_LFO_AT)) {
@@ -446,7 +445,6 @@ void handleNRPN(int msg, int int_val) {
 	if (idx >= 0)
 		lastNRPN[idx] = int_val;
 }
-
 
 void dumpPresetNRPN() {
 

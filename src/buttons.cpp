@@ -194,10 +194,6 @@ void showLfoWaveform(byte selectedLfo) {
 	showPresetNumberTimeout = 12000;
 }
 
-void sendSSEGCC(byte op) {
-	sendNRPN(NRPN_OP1_BASE + NRPN_OP_ENV_MODE + NRPN_OP_STRIDE * op, getOperatorEnvelopeMode(op));
-}
-
 void buttChanged(Button number, bool value) {
 	if (millis() > 1000) {
 		if (setupMode) {
@@ -567,7 +563,6 @@ void buttChanged(Button number, bool value) {
 
 							else {
 								setSSEG(lastOperator, 0, 1); // operator bitIndex value
-								sendSSEGCC(lastOperator);
 							}
 						}
 						break; // triangle
@@ -601,7 +596,6 @@ void buttChanged(Button number, bool value) {
 								showLfoWaveform(selectedLfo);
 							} else {
 								setSSEG(lastOperator, 0, 0); // operator bitIndex value}
-								sendSSEGCC(lastOperator);
 							}
 						}
 						break; // saw
@@ -978,7 +972,6 @@ void buttChanged(Button number, bool value) {
 								} else {
 									setSSEG(lastOperator, 1,
 									        !bitRead(SSEG[lastOperator], 1)); // flip the SSEG enable bit
-									sendSSEGCC(lastOperator);
 								}
 							}
 						}

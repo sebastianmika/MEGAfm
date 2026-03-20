@@ -2,10 +2,16 @@
 #define MEGAFM_CMAKE_SYSEX_H
 
 #define MAX_SYSEX_DATA_LENGTH 2048
-extern int sysExDataIndex;
-extern byte sysExData[MAX_SYSEX_DATA_LENGTH];
+#define SYSEX_STATUS_OK 0
+#define SYSEX_STATUS_BYTE_ERROR 1
+#define SYSEX_STATUS_HEADER_MISMATCH 2
+#define SYSEX_STATUS_LENGTH_ERROR 3
+#define SYSEX_STATUS_DUMP_LENGTH_ERROR 4
+#define SYSEX_STATUS_UNKNOWN_COMMAND 5
 
-void handleSysEx();
-void abortSysEx(bool errro);
+void handleIncomingSysEx();
+void sysExExitStatus(byte error);
+void sysExReset();
+void sysExAppendByte(byte b);
 
 #endif // MEGAFM_CMAKE_SYSEX_H

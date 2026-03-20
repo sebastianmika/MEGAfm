@@ -54,12 +54,9 @@ void sendNRPN(int msg, int value) {
 	int idx = nrpnIndex(msg);
 	if (idx >= 0 && lastNRPN[idx] == value)
 		return;
-	if (idx >= 0) {
+	if (idx >= 0)
 		lastNRPN[idx] = value;
-		rightDot();
-	} else
-		// An NRPN we do not map; send, but with left dot feedback for debugging
-		leftDot();
+
 	sendControlChange(99, msg >> 7, masterChannelOut);     // NRPN MSB
 	sendControlChange(98, msg & 0x7F, masterChannelOut);   // NRPN LSB
 	sendControlChange(6, value >> 7, masterChannelOut);    // Data Entry MSB
@@ -70,6 +67,18 @@ void handleNRPN(int msg, int int_val) {
 	// NRPN values are sent as 14 bit values, but we only mostly only use the lower 8 bits
 	byte byte_val = (byte)int_val;
 	bool bool_val = (int_val > 0);
+
+	// (temporarily) disable pickup mode
+	bool oldPickupMode = pickupMode;
+	pickupMode = false;
+
+	// Update the deduplication cache with the received value so that a subsequent
+	// sendNRPN() with the same value is suppressed — prevents echoing a received
+	// message back to the sender (e.g. DAW sends NRPN → firmware applies it →
+	// dumpPreset() would re-send the same value without this guard).
+	int idx = nrpnIndex(msg);
+	if (idx >= 0)
+		lastNRPN[idx] = int_val;
 
 	if ((msg >= NRPN_LFO_SHAPE) && (msg <= NRPN_LFO_AT)) {
 		if ((msg >= NRPN_LFO_SHAPE) && (msg <= NRPN_LFO_SHAPE + 2)) {
@@ -274,7 +283,7 @@ void handleNRPN(int msg, int int_val) {
 		// So to link to pot 10, val should be 21 (10*2 + 1) and to unlink it val should be 20 (10*2 + 0)12
 		byte lfo = msg - NRPN_LFO_LINK;
 		bool isLinked = byte_val & 1;
-		byte targetPot = byte_val >> 1;
+		targetPot = byte_val >> 1;
 		if (targetPot < 51) {
 			linked[lfo][targetPot] = isLinked;
 			showLink();
@@ -427,23 +436,13 @@ void handleNRPN(int msg, int int_val) {
 		}
 	} else if (msg == NRPN_OP4_BASE + NRPN_OP_RATE_SCALE) {
 		// Set rate scaling for operators 4 (0-3)
-		// if (byte_val < 4) {
-		// 	updateFMifNecessary(30);
-		// 	fmBase[30] = byte_val << 6; // 0-3 becomes 0-192 (4 steps: 0, 64, 128, 192)
-		// 	ledNumber(byte_val);
-		// }
 		loopHeld = true;
 		movedPot(FADER_DETUNE_4, byte_val, 1);
 		loopHeld = false;
 	}
 
-	// Update the deduplication cache with the received value so that a subsequent
-	// sendNRPN() with the same value is suppressed — prevents echoing a received
-	// message back to the sender (e.g. DAW sends NRPN → firmware applies it →
-	// dumpPreset() would re-send the same value without this guard).
-	int idx = nrpnIndex(msg);
-	if (idx >= 0)
-		lastNRPN[idx] = int_val;
+	// reset pickup mode to previous state after handling the NRPN
+	pickupMode = oldPickupMode;
 }
 
 void dumpPresetNRPN() {
@@ -451,146 +450,146 @@ void dumpPresetNRPN() {
 	for (int number = 0; number < 58; number++) {
 		switch (number) {
 			// OP1
-			case 18:
+			case FADER_DETUNE_1:
 				sendNRPN(NRPN_OP1_BASE + NRPN_OP_DETUNE, fmBase[0]);
 				break; // detune
-			case 27:
+			case FADER_MULT_1:
 				sendNRPN(NRPN_OP1_BASE + NRPN_OP_MULT, fmBase[1]);
 				break; // multiple
-			case 19:
+			case FADER_LEVEL_1:
 				sendNRPN(NRPN_OP1_BASE + NRPN_OP_LEVEL, fmBase[2]);
 				break; // op level
-			case 29:
+			case FADER_ATTACK_1:
 				sendNRPN(NRPN_OP1_BASE + NRPN_OP_ATTACK, fmBase[4]);
 				break; // attack
-			case 21:
+			case FADER_DECAY_1:
 				sendNRPN(NRPN_OP1_BASE + NRPN_OP_DECAY, fmBase[5]);
 				break; // decay1
-			case 25:
+			case FADER_SUSTAIN_1:
 				sendNRPN(NRPN_OP1_BASE + NRPN_OP_SUSTAIN_LVL, fmBase[7]);
 				break; // sustain
-			case 17:
+			case FADER_SUSTAIN_RATE_1:
 				sendNRPN(NRPN_OP1_BASE + NRPN_OP_SUSTAIN_RATE, fmBase[6]);
 				break; // sustain rate
-			case 30:
+			case FADER_RELEASE_1:
 				sendNRPN(NRPN_OP1_BASE + NRPN_OP_RELEASE, fmBase[8]);
 				break; // release
 			// OP2
-			case 31:
+			case FADER_DETUNE_2:
 				sendNRPN(NRPN_OP2_BASE + NRPN_OP_DETUNE, fmBase[18]);
 				break; // detune
-			case 32:
+			case FADER_MULT_2:
 				sendNRPN(NRPN_OP2_BASE + NRPN_OP_MULT, fmBase[19]);
 				break; // multiple
-			case 40:
+			case FADER_LEVEL_2:
 				sendNRPN(NRPN_OP2_BASE + NRPN_OP_LEVEL, fmBase[20]);
 				break; // op level
-			case 36:
+			case FADER_ATTACK_2:
 				sendNRPN(NRPN_OP2_BASE + NRPN_OP_ATTACK, fmBase[22]);
 				break; // attack
-			case 44:
+			case FADER_DECAY_2:
 				sendNRPN(NRPN_OP2_BASE + NRPN_OP_DECAY, fmBase[23]);
 				break; // decay1
-			case 42:
+			case FADER_SUSTAIN_2:
 				sendNRPN(NRPN_OP2_BASE + NRPN_OP_SUSTAIN_LVL, fmBase[25]);
 				break; // sustain
-			case 34:
+			case FADER_SUSTAIN_RATE_2:
 				sendNRPN(NRPN_OP2_BASE + NRPN_OP_SUSTAIN_RATE, fmBase[24]);
 				break; // sustain rate
-			case 11:
+			case FADER_RELEASE_2:
 				sendNRPN(NRPN_OP2_BASE + NRPN_OP_RELEASE, fmBase[26]);
 				break; // release
 			// OP3
-			case 20:
+			case FADER_DETUNE_3:
 				sendNRPN(NRPN_OP3_BASE + NRPN_OP_DETUNE, fmBase[9]);
 				break; // detune
-			case 24:
+			case FADER_MULT_3:
 				sendNRPN(NRPN_OP3_BASE + NRPN_OP_MULT, fmBase[10]);
 				break; // multiple
-			case 16:
+			case FADER_LEVEL_3:
 				sendNRPN(NRPN_OP3_BASE + NRPN_OP_LEVEL, fmBase[11]);
 				break; // op level
-			case 8:
+			case FADER_ATTACK_3:
 				sendNRPN(NRPN_OP3_BASE + NRPN_OP_ATTACK, fmBase[13]);
 				break; // attack
-			case 0:
+			case FADER_DECAY_3:
 				sendNRPN(NRPN_OP3_BASE + NRPN_OP_DECAY, fmBase[14]);
 				break; // decay1
-			case 7:
+			case FADER_SUSTAIN_3:
 				sendNRPN(NRPN_OP3_BASE + NRPN_OP_SUSTAIN_LVL, fmBase[16]);
 				break; // sustain
-			case 45:
+			case FADER_SUSTAIN_RATE_3:
 				sendNRPN(NRPN_OP3_BASE + NRPN_OP_SUSTAIN_RATE, fmBase[15]);
 				break; // sustain rate
-			case 37:
+			case FADER_RELEASE_3:
 				sendNRPN(NRPN_OP3_BASE + NRPN_OP_RELEASE, fmBase[17]);
 				break; // release
 			// OP4
-			case 47:
+			case FADER_DETUNE_4:
 				sendNRPN(NRPN_OP4_BASE + NRPN_OP_DETUNE, fmBase[27]);
 				break; // detune
-			case 39:
+			case FADER_MULT_4:
 				sendNRPN(NRPN_OP4_BASE + NRPN_OP_MULT, fmBase[28]);
 				break; // multiple
-			case 38:
+			case FADER_LEVEL_4:
 				sendNRPN(NRPN_OP4_BASE + NRPN_OP_LEVEL, fmBase[29]);
 				break; // op level
-			case 46:
+			case FADER_ATTACK_4:
 				sendNRPN(NRPN_OP4_BASE + NRPN_OP_ATTACK, fmBase[31]);
 				break; // attack
-			case 33:
+			case FADER_DECAY_4:
 				sendNRPN(NRPN_OP4_BASE + NRPN_OP_DECAY, fmBase[32]);
 				break; // decay1
-			case 41:
+			case FADER_SUSTAIN_4:
 				sendNRPN(NRPN_OP4_BASE + NRPN_OP_SUSTAIN_LVL, fmBase[34]);
 				break; // sustain
-			case 43:
+			case FADER_SUSTAIN_RATE_4:
 				sendNRPN(NRPN_OP4_BASE + NRPN_OP_SUSTAIN_RATE, fmBase[33]);
 				break; // sustain rate
-			case 35:
+			case FADER_RELEASE_4:
 				sendNRPN(NRPN_OP4_BASE + NRPN_OP_RELEASE, fmBase[35]);
 				break; // release
 
-			case 1:
+			case KNOB_VOLUME:
 				sendNRPN(NRPN_VOLUME, (128 - lastVol) << 1);
 				break; // volume
-			case 4:
+			case KNOB_ALGO:
 				sendNRPN(NRPN_ALGORITHM, fmBase[42]);
 				break; // algo
-			case 3:
+			case KNOB_FEEDBACK:
 				sendNRPN(NRPN_FEEDBACK, fmBase[43]);
 				break; // feedback
-			case 28:
+			case KNOB_FAT:
 				sendNRPN(NRPN_FAT, fmBase[50]);
 				break; // fat 1-127
-			case 15:
+			case KNOB_LFO1_RATE:
 				sendNRPN(NRPN_LFO1_RATE, fmBase[36]);
 				break; // lfo 1 rate
-			case 12:
+			case KNOB_LFO1_DEPTH:
 				sendNRPN(NRPN_LFO1_DEPTH, fmBase[37]);
 				break; // lfo 1 depth
-			case 10:
+			case KNOB_LFO2_RATE:
 				sendNRPN(NRPN_LFO2_RATE, fmBase[38]);
 				break; // lfo 2 rate
-			case 9:
+			case KNOB_LFO2_DEPTH:
 				sendNRPN(NRPN_LFO2_DEPTH, fmBase[39]);
 				break; // lfo 2 depth
-			case 14:
+			case KNOB_LFO3_RATE:
 				sendNRPN(NRPN_LFO3_RATE, fmBase[40]);
 				break; // lfo 3 rate
-			case 2:
+			case KNOB_LFO3_DEPTH:
 				sendNRPN(NRPN_LFO3_DEPTH, fmBase[41]);
 				break; // lfo 3 depth
-			case 6:
+			case KNOB_ARP_RATE:
 				sendNRPN(NRPN_ARP_RATE, fmBase[46]);
 				break; /// arp rate
-			case 5:
+			case KNOB_ARP_RANGE:
 				sendNRPN(NRPN_ARP_RANGE, fmBase[47]);
 				break; // arp range
-			case 48:
+			case KNOB_VIB_RATE:
 				sendNRPN(NRPN_VIB_RATE, fmBase[48]);
 				break; // vibrato rate WAS 7
-			case 13:
+			case KNOB_VIB_DEPTH:
 				sendNRPN(NRPN_VIB_DEPTH, fmBase[49]);
 				break; // vibrato depth
 		}
@@ -627,8 +626,9 @@ void dumpPresetNRPN() {
 		sendNRPN(NRPN_LFO_CLOCK_SYNC + i, lfoClockEnable[i]); // LFO MIDI sync
 
 		for (int targetPot = 0; targetPot < 51; targetPot++)
-			// skip unused pots
-			if ((targetPot != 3) && (targetPot != 12) && (targetPot != 21) && (targetPot != 23) && (targetPot != 30) &&
+			// skip unused pots, 3, 12, 21, 30 are op rate scaling
+			// 44 & 45 are unused
+			if ((targetPot != 3) && (targetPot != 12) && (targetPot != 21) && (targetPot != 30) && (targetPot != 44) &&
 			    (targetPot != 45))
 				sendNRPN(NRPN_LFO_LINK + i, (targetPot << 1) | linked[i][targetPot]); // LFO links
 	}

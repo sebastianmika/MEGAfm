@@ -732,14 +732,9 @@ void sendCC(byte number, int value) {
 	}
 }
 
-void sendMidiButt(byte number, int value) {
-	rightDot();
-	sendCC(number, value);
-}
-
 byte lastData1, lastData2;
 
-void HandleControlChange(byte channel, byte number, byte val) {
+void handleControlChange(byte channel, byte number, byte val) {
 	byte temp;
 
 	// Update the deduplication cache with the received value so that a subsequent
@@ -1224,11 +1219,11 @@ void midiRead() {
 			// Status
 			if ((mStatus == 8) && (input == 247)) { // input == F7
 				// In SysEx and receivd Sysex end; handle data and end sysex mode
-				handleSysEx();
-				abortSysEx(false);
+				sysExAppendByte(247);
+				handleIncomingSysEx();
 			} else if (mStatus == 8) {
 				// In SysEx but received a non-F7 status byte; invalid message, exit SysEx mode
-				abortSysEx(true);
+				sysExExitStatus(SYSEX_STATUS_BYTE_ERROR);
 			}
 			switch (input) {
 				case 248:
@@ -1283,9 +1278,8 @@ void midiRead() {
 					// SysEx start
 					mStatus = 8;
 					mData = 0;
-					sysExDataIndex = 0;
-					digit(0, 24); // all on
-					digit(1, 21); // blank
+					sysExReset();
+					sysExAppendByte(240);
 					break;
 				// case 247:  // F7
 				//  SysEx end; handeled above
@@ -1347,7 +1341,7 @@ void midiRead() {
 						mData = 255;
 						break;
 					case 3:
-						HandleControlChange(mChannel, mData, input);
+						handleControlChange(mChannel, mData, input);
 						mData = 255;
 						break;
 					case 4:
@@ -1362,27 +1356,14 @@ void midiRead() {
 						handleProgramChange(mChannel, input);
 						mData = 255;
 						break;
-
 					case 7:
 						handlePolyAT(mChannel, mData, input);
 						mData = 255;
 						break;
 					case 8:
-						if (sysExDataIndex == 3) {
-							// check if it's a SysEx message for us ( - we do the same as the firmware and take the
-							// default from hex2sys = \x00\x21\x44 = 00 33 68)
-							if (sysExData[0] != 0 || sysExData[1] != 33 || sysExData[2] != 68) {
-								// not for us, ignore the rest of the message
-								abortSysEx(true);
-								break;
-							}
-						} else if (sysExDataIndex == MAX_SYSEX_DATA_LENGTH) {
-							abortSysEx(true);
-							break;
-						}
-						sysExData[sysExDataIndex++] = input;
+						sysExAppendByte(input);
 						mData = 0;
-						break; // SysEx
+						break;
 					default:
 						break;
 				}

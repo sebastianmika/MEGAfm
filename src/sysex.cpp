@@ -117,127 +117,129 @@ void dumpPresetAsSysEx() {
 			val = 3 + (invertedSaw[i] ? 1 : 0);
 		else // kRandom
 			val = 5 + (noiseTableLength[i] - 2);
-		sysexWriteNRPN(100 + i, val);
+		sysexWriteNRPN(NRPN_LFO_SHAPE + i, val);
 	}
 
 	// LFO looping (103-105), retrig (106-108), MIDI sync (109-111)
+	// MIDI sync must go first, so the host knows how to interpret the rate
 	for (int i = 0; i < 3; i++)
-		sysexWriteNRPN(103 + i, looping[i]);
+		sysexWriteNRPN(NRPN_LFO_CLOCK_SYNC + i, lfoClockEnable[i]);
 	for (int i = 0; i < 3; i++)
-		sysexWriteNRPN(106 + i, retrig[i]);
+		sysexWriteNRPN(NRPN_LFO_LOOPING + i, looping[i]);
 	for (int i = 0; i < 3; i++)
-		sysexWriteNRPN(109 + i, lfoClockEnable[i]);
+		sysexWriteNRPN(NRPN_LFO_RETRIG + i, retrig[i]);
 
 	// LFO vel/mod/at (112-114)
-	sysexWriteNRPN(112, lfoVel);
-	sysexWriteNRPN(113, lfoMod);
-	sysexWriteNRPN(114, lfoAt);
+	sysexWriteNRPN(NRPN_LFO_VEL, lfoVel);
+	sysexWriteNRPN(NRPN_LFO_MOD, lfoMod);
+	sysexWriteNRPN(NRPN_LFO_AT, lfoAt);
 
 	// Fine tune (220) and Glide (221)
 	// fine is 0-255; movedPot(KNOB_VOLUME, fine) with voiceHeld restores it directly.
 	// glide is 0-15; movedPot(KNOB_FAT, glide<<4) with voiceHeld restores it (glide = data>>4).
-	sysexWriteNRPN(220, fine);
-	sysexWriteNRPN(221, glide << 4);
+	sysexWriteNRPN(NRPN_FINE_TUNE, fine);
+	sysexWriteNRPN(NRPN_GLIDE, glide << 4);
 
 	// LFO rates and depths
-	sysexWriteNRPN(222, fmBase[36]); // LFO1 rate
-	sysexWriteNRPN(223, fmBase[38]); // LFO2 rate
-	sysexWriteNRPN(224, fmBase[40]); // LFO3 rate
-	sysexWriteNRPN(225, fmBase[37]); // LFO1 depth
-	sysexWriteNRPN(226, fmBase[39]); // LFO2 depth
-	sysexWriteNRPN(227, fmBase[41]); // LFO3 depth
+	sysexWriteNRPN(NRPN_LFO1_RATE, fmBase[36]);  // LFO1 rate
+	sysexWriteNRPN(NRPN_LFO2_RATE, fmBase[38]);  // LFO2 rate
+	sysexWriteNRPN(NRPN_LFO3_RATE, fmBase[40]);  // LFO3 rate
+	sysexWriteNRPN(NRPN_LFO1_DEPTH, fmBase[37]); // LFO1 depth
+	sysexWriteNRPN(NRPN_LFO2_DEPTH, fmBase[39]); // LFO2 depth
+	sysexWriteNRPN(NRPN_LFO3_DEPTH, fmBase[41]); // LFO3 depth
 
 	// Fat, Volume, Feedback, Algorithm
 	// volume: movedPot(KNOB_VOLUME, data) stores lastVol = 128-(data>>1), so data = (128-lastVol)<<1
-	sysexWriteNRPN(228, fmBase[50]);
-	sysexWriteNRPN(229, (128 - lastVol) << 1);
-	sysexWriteNRPN(230, fmBase[43]);
-	sysexWriteNRPN(231, fmBase[42]);
+	sysexWriteNRPN(NRPN_FAT, fmBase[50]);
+	sysexWriteNRPN(NRPN_VOLUME, (128 - lastVol) << 1);
+	sysexWriteNRPN(NRPN_FEEDBACK, fmBase[43]);
+	sysexWriteNRPN(NRPN_ALGORITHM, fmBase[42]);
 
 	// Note priority
-	sysexWriteNRPN(232, notePriority);
+	sysexWriteNRPN(NRPN_NOTE_PRIORITY, notePriority);
 
 	// Global settings
-	sysexWriteNRPN(200, EEPROM.read(3965)); // brightness (0-15)
-	sysexWriteNRPN(201, thru);              // MIDI thru
-	sysexWriteNRPN(202, pickupMode);        // pickup mode
-	sysexWriteNRPN(203, stereoCh3);         // stereo ch3
-	sysexWriteNRPN(204, mpe);               // MPE mode
-	sysexWriteNRPN(205, fatSpreadMode);     // fat spread mode
-	sysexWriteNRPN(206, ignoreVolume);      // ignore preset volume
+	sysexWriteNRPN(NRPN_SET_BRIGHTNESS, EEPROM.read(3965)); // brightness (0-15)
+	sysexWriteNRPN(NRPN_SET_MIDI_THRU, thru);               // MIDI thru
+	sysexWriteNRPN(NRPN_SET_PICKUP_MODE, pickupMode);       // pickup mode
+	sysexWriteNRPN(NRPN_SET_STEREO_CH3, stereoCh3);         // stereo ch3
+	sysexWriteNRPN(NRPN_SET_MPE_MODE, mpe);                 // MPE mode
+	sysexWriteNRPN(NRPN_SET_FAT_SPREAD, fatSpreadMode);     // fat spread mode
+	sysexWriteNRPN(NRPN_SET_IGNORE_VOL, ignoreVolume);      // ignore preset volume
 	// fatMode: FAT_MODE_SEMITONE=false, FAT_MODE_OCTAVE=true.
 	// NRPN 207 handler: bool_val=true → semitone, bool_val=false → octave. So send !fatMode.
-	sysexWriteNRPN(207, !fatMode);
-	sysexWriteNRPN(208, (byte)voiceMode); // voice mode (0-5)
-	sysexWriteNRPN(209, octOffset);       // octave offset (0-3)
+	sysexWriteNRPN(NRPN_SET_FAT_MODE, !fatMode);
+	sysexWriteNRPN(NRPN_SET_VOICE_MODE, (byte)voiceMode); // voice mode (0-5)
+	sysexWriteNRPN(NRPN_SET_OCT_OFFSET, octOffset);       // octave offset (0-3)
 
-	// Arp
-	sysexWriteNRPN(300, arpMode);        // arp mode (0-7)
-	sysexWriteNRPN(301, arpClockEnable); // arp MIDI clock sync
-	sysexWriteNRPN(302, fmBase[46]);     // arp rate
-	sysexWriteNRPN(303, fmBase[47]);     // arp range
+	// Arp; clock first to let the host know how to interpret the rate
+	sysexWriteNRPN(NRPN_ARP_CLOCK_SYNC, arpClockEnable); // arp MIDI clock sync
+	sysexWriteNRPN(NRPN_ARP_MODE, arpMode);              // arp mode (0-7)
+	sysexWriteNRPN(NRPN_ARP_RATE, fmBase[46]);           // arp rate
+	sysexWriteNRPN(NRPN_ARP_RANGE, fmBase[47]);          // arp range
 
-	// Vibrato
-	sysexWriteNRPN(500, vibratoClockEnable); // vibrato MIDI clock sync
-	sysexWriteNRPN(501, fmBase[48]);         // vibrato rate
-	sysexWriteNRPN(502, fmBase[49]);         // vibrato depth
+	// Vibrato, clock first to let the host know how to interpret the rate
+	sysexWriteNRPN(NRPN_VIB_CLOCK_SYNC, vibratoClockEnable); // vibrato MIDI clock sync
+	sysexWriteNRPN(NRPN_VIB_RATE, fmBase[48]);               // vibrato rate
+	sysexWriteNRPN(NRPN_VIB_DEPTH, fmBase[49]);              // vibrato depth
 
 	// LFO links (1000-1002): one NRPN per (lfo, targetPot), value = (targetPot<<1)|linked
 	for (int i = 0; i < 3; i++) {
 		for (int targetPot = 0; targetPot < 51; targetPot++) {
-			// Exclude operator rate scaling (3/12/21/30) and unused pot/fmBase 45
-			if ((targetPot != 3) && (targetPot != 12) && (targetPot != 21) && (targetPot != 30) && (targetPot != 45))
-				sysexWriteNRPN(1000 + i, (targetPot << 1) | linked[i][targetPot]);
+			// Exclude operator rate scaling (3/12/21/30) and unused pot/fmBase 44, 45
+			if ((targetPot != 3) && (targetPot != 12) && (targetPot != 21) && (targetPot != 30) && (targetPot != 44) &&
+			    (targetPot != 45))
+				sysexWriteNRPN(NRPN_LFO_LINK + i, (targetPot << 1) | linked[i][targetPot]);
 		}
 	}
 
 	// Operator 1 (2000-2009)
-	sysexWriteNRPN(2000, fmBase[0]);                  // detune
-	sysexWriteNRPN(2001, fmBase[1]);                  // multiple
-	sysexWriteNRPN(2002, fmBase[2]);                  // level
-	sysexWriteNRPN(2003, fmBase[4]);                  // attack
-	sysexWriteNRPN(2004, fmBase[5]);                  // decay
-	sysexWriteNRPN(2005, fmBase[7]);                  // sustain
-	sysexWriteNRPN(2006, fmBase[6]);                  // sustain rate
-	sysexWriteNRPN(2007, fmBase[8]);                  // release
-	sysexWriteNRPN(2008, getOperatorEnvelopeMode(0)); // envelope mode (0-2)
-	sysexWriteNRPN(2009, fmBase[3]);                  // rate scaling (raw: 0,64,128,192)
+	sysexWriteNRPN(NRPN_OP1_BASE + NRPN_OP_DETUNE, fmBase[0]);                    // detune
+	sysexWriteNRPN(NRPN_OP1_BASE + NRPN_OP_MULT, fmBase[1]);                      // multiple
+	sysexWriteNRPN(NRPN_OP1_BASE + NRPN_OP_LEVEL, fmBase[2]);                     // level
+	sysexWriteNRPN(NRPN_OP1_BASE + NRPN_OP_ATTACK, fmBase[4]);                    // attack
+	sysexWriteNRPN(NRPN_OP1_BASE + NRPN_OP_DECAY, fmBase[5]);                     // decay
+	sysexWriteNRPN(NRPN_OP1_BASE + NRPN_OP_SUSTAIN_LVL, fmBase[7]);               // sustain
+	sysexWriteNRPN(NRPN_OP1_BASE + NRPN_OP_SUSTAIN_RATE, fmBase[6]);              // sustain rate
+	sysexWriteNRPN(NRPN_OP1_BASE + NRPN_OP_RELEASE, fmBase[8]);                   // release
+	sysexWriteNRPN(NRPN_OP1_BASE + NRPN_OP_ENV_MODE, getOperatorEnvelopeMode(0)); // envelope mode (0-2)
+	sysexWriteNRPN(NRPN_OP1_BASE + NRPN_OP_RATE_SCALE, fmBase[3]);                // rate scaling (raw: 0,64,128,192)
 
 	// Operator 2 (3000-3009)
-	sysexWriteNRPN(3000, fmBase[18]);                 // detune
-	sysexWriteNRPN(3001, fmBase[19]);                 // multiple
-	sysexWriteNRPN(3002, fmBase[20]);                 // level
-	sysexWriteNRPN(3003, fmBase[22]);                 // attack
-	sysexWriteNRPN(3004, fmBase[23]);                 // decay
-	sysexWriteNRPN(3005, fmBase[25]);                 // sustain
-	sysexWriteNRPN(3006, fmBase[24]);                 // sustain rate
-	sysexWriteNRPN(3007, fmBase[26]);                 // release
-	sysexWriteNRPN(3008, getOperatorEnvelopeMode(1)); // envelope mode (0-2)
-	sysexWriteNRPN(3009, fmBase[12]);                 // rate scaling (raw: 0,64,128,192)
+	sysexWriteNRPN(NRPN_OP2_BASE + NRPN_OP_DETUNE, fmBase[18]);                   // detune
+	sysexWriteNRPN(NRPN_OP2_BASE + NRPN_OP_MULT, fmBase[19]);                     // multiple
+	sysexWriteNRPN(NRPN_OP2_BASE + NRPN_OP_LEVEL, fmBase[20]);                    // level
+	sysexWriteNRPN(NRPN_OP2_BASE + NRPN_OP_ATTACK, fmBase[22]);                   // attack
+	sysexWriteNRPN(NRPN_OP2_BASE + NRPN_OP_DECAY, fmBase[23]);                    // decay
+	sysexWriteNRPN(NRPN_OP2_BASE + NRPN_OP_SUSTAIN_LVL, fmBase[25]);              // sustain
+	sysexWriteNRPN(NRPN_OP2_BASE + NRPN_OP_SUSTAIN_RATE, fmBase[24]);             // sustain rate
+	sysexWriteNRPN(NRPN_OP2_BASE + NRPN_OP_RELEASE, fmBase[26]);                  // release
+	sysexWriteNRPN(NRPN_OP2_BASE + NRPN_OP_ENV_MODE, getOperatorEnvelopeMode(1)); // envelope mode (0-2)
+	sysexWriteNRPN(NRPN_OP2_BASE + NRPN_OP_RATE_SCALE, fmBase[12]);               // rate scaling (raw: 0,64,128,192)
 
 	// Operator 3 (4000-4009)
-	sysexWriteNRPN(4000, fmBase[9]);                  // detune
-	sysexWriteNRPN(4001, fmBase[10]);                 // multiple
-	sysexWriteNRPN(4002, fmBase[11]);                 // level
-	sysexWriteNRPN(4003, fmBase[13]);                 // attack
-	sysexWriteNRPN(4004, fmBase[14]);                 // decay
-	sysexWriteNRPN(4005, fmBase[16]);                 // sustain
-	sysexWriteNRPN(4006, fmBase[15]);                 // sustain rate
-	sysexWriteNRPN(4007, fmBase[17]);                 // release
-	sysexWriteNRPN(4008, getOperatorEnvelopeMode(2)); // envelope mode (0-2)
-	sysexWriteNRPN(4009, fmBase[21]);                 // rate scaling (raw: 0,64,128,192)
+	sysexWriteNRPN(NRPN_OP3_BASE + NRPN_OP_DETUNE, fmBase[9]);                    // detune
+	sysexWriteNRPN(NRPN_OP3_BASE + NRPN_OP_MULT, fmBase[10]);                     // multiple
+	sysexWriteNRPN(NRPN_OP3_BASE + NRPN_OP_LEVEL, fmBase[11]);                    // level
+	sysexWriteNRPN(NRPN_OP3_BASE + NRPN_OP_ATTACK, fmBase[13]);                   // attack
+	sysexWriteNRPN(NRPN_OP3_BASE + NRPN_OP_DECAY, fmBase[14]);                    // decay
+	sysexWriteNRPN(NRPN_OP3_BASE + NRPN_OP_SUSTAIN_LVL, fmBase[16]);              // sustain
+	sysexWriteNRPN(NRPN_OP3_BASE + NRPN_OP_SUSTAIN_RATE, fmBase[15]);             // sustain rate
+	sysexWriteNRPN(NRPN_OP3_BASE + NRPN_OP_RELEASE, fmBase[17]);                  // release
+	sysexWriteNRPN(NRPN_OP3_BASE + NRPN_OP_ENV_MODE, getOperatorEnvelopeMode(2)); // envelope mode (0-2)
+	sysexWriteNRPN(NRPN_OP3_BASE + NRPN_OP_RATE_SCALE, fmBase[21]);               // rate scaling (raw: 0,64,128,192)
 
 	// Operator 4 (5000-5009)
-	sysexWriteNRPN(5000, fmBase[27]);                 // detune
-	sysexWriteNRPN(5001, fmBase[28]);                 // multiple
-	sysexWriteNRPN(5002, fmBase[29]);                 // level
-	sysexWriteNRPN(5003, fmBase[31]);                 // attack
-	sysexWriteNRPN(5004, fmBase[32]);                 // decay
-	sysexWriteNRPN(5005, fmBase[34]);                 // sustain
-	sysexWriteNRPN(5006, fmBase[33]);                 // sustain rate
-	sysexWriteNRPN(5007, fmBase[35]);                 // release
-	sysexWriteNRPN(5008, getOperatorEnvelopeMode(3)); // envelope mode (0-2)
-	sysexWriteNRPN(5009, fmBase[30]);                 // rate scaling (raw: 0,64,128,192)
+	sysexWriteNRPN(NRPN_OP4_BASE + NRPN_OP_DETUNE, fmBase[27]);                   // detune
+	sysexWriteNRPN(NRPN_OP4_BASE + NRPN_OP_MULT, fmBase[28]);                     // multiple
+	sysexWriteNRPN(NRPN_OP4_BASE + NRPN_OP_LEVEL, fmBase[29]);                    // level
+	sysexWriteNRPN(NRPN_OP4_BASE + NRPN_OP_ATTACK, fmBase[31]);                   // attack
+	sysexWriteNRPN(NRPN_OP4_BASE + NRPN_OP_DECAY, fmBase[32]);                    // decay
+	sysexWriteNRPN(NRPN_OP4_BASE + NRPN_OP_SUSTAIN_LVL, fmBase[34]);              // sustain
+	sysexWriteNRPN(NRPN_OP4_BASE + NRPN_OP_SUSTAIN_RATE, fmBase[33]);             // sustain rate
+	sysexWriteNRPN(NRPN_OP4_BASE + NRPN_OP_RELEASE, fmBase[35]);                  // release
+	sysexWriteNRPN(NRPN_OP4_BASE + NRPN_OP_ENV_MODE, getOperatorEnvelopeMode(3)); // envelope mode (0-2)
+	sysexWriteNRPN(NRPN_OP4_BASE + NRPN_OP_RATE_SCALE, fmBase[30]);               // rate scaling (raw: 0,64,128,192)
 
 	Serial.write(0xF7); // SysEx end
 

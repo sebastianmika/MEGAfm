@@ -8,6 +8,5 @@ extern byte nrpn_state;
 void sendNRPN(int msg, int value);
 void handleNRPN(int msg, int int_val);
 void initLastNRPN();
-void dumpPresetNRPN();
 
 #endif // MEGAFM_CMAKE_NRPN_H

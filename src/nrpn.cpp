@@ -256,6 +256,8 @@ void handleNRPN(int msg, int int_val) {
 	} else if (msg == NRPN_ARP_RANGE) {
 		// Arp Range
 		movedPot(KNOB_ARP_RANGE, byte_val, 1);
+	} else if (msg == NRPN_ARP_SET_STEP) {
+		setArpStep(int_val >> 8, int_val & 0xFF);
 	} else if (msg == NRPN_VIB_CLOCK_SYNC) {
 		vibratoClockEnable = bool_val;
 		setVibratoClock();

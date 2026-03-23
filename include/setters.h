@@ -7,6 +7,7 @@ void setLFO2Clock();
 void setLFO3Clock();
 void setVibratoClock();
 void setArpClock();
+void setArpStep(byte step, byte value);
 void setFatSpreadMode();
 void setLFO1Vel();
 void setLFO2Mod();

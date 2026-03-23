@@ -45,7 +45,7 @@ void handleIncomingSysEx() {
 	// That 0 33 68 is the manufacturer ID (hex 00 21 44) has already
 	// been checked in midi.cpp before calling this function
 
-	// Need at least start and end byte, 3 manufacturer, 1 command
+	// Need at least six bytes: start and end byte, 3 manufacturer, 1 command
 	if (sysExDataIndex < 6) {
 		sysExExitStatus(SYSEX_STATUS_LENGTH_ERROR);
 		digit(0, sysExDataIndex);
@@ -66,7 +66,6 @@ void handleIncomingSysEx() {
 			sysExExitStatus(SYSEX_STATUS_DUMP_LENGTH_ERROR);
 			return;
 		}
-
 		for (int i = 5; i < sysExDataIndex - 1; i += 4) {
 			// Decode NRPN from byte MSB i and LSB i+1
 			int nrpn = (sysExData[i] << 7) | sysExData[i + 1];
@@ -74,12 +73,46 @@ void handleIncomingSysEx() {
 			int value = (sysExData[i + 2] << 7) | sysExData[i + 3];
 			handleNRPN(nrpn, value);
 		}
-
+		sysExExitStatus(SYSEX_STATUS_OK);
+	} else if (sysExData[4] == 93) {
+		// Arp dump: payload is 1 byte length, followed by that many notes (2 bytes each MSB/LSB, 255=rest)
+		if (sysExDataIndex < 7) {
+			sysExExitStatus(SYSEX_STATUS_DUMP_LENGTH_ERROR);
+			return;
+		}
+		byte len = sysExData[5];
+		if (len > 16 || sysExDataIndex != 7 + len * 2) {
+			sysExExitStatus(SYSEX_STATUS_DUMP_LENGTH_ERROR);
+			return;
+		}
+		seqLength = len;
+		for (int i = 0; i < len; i++) {
+			seq[i] = (sysExData[6 + i * 2] << 7) | sysExData[6 + i * 2 + 1];
+		}
 		sysExExitStatus(SYSEX_STATUS_OK);
 	} else {
 		// Unknown command, ignore
 		sysExExitStatus(SYSEX_STATUS_UNKNOWN_COMMAND);
 	}
+}
+
+void dumpArpAsSysEx() {
+	// SysEx header: F0 00 21 44 [command=94 = arp dump]
+	Serial.write(0xF0);
+	Serial.write(0);
+	Serial.write(33);
+	Serial.write(68);
+	Serial.write(94);
+
+	// Payload: length (1 byte) + note data (2*length bytes)
+	Serial.write(seqLength);
+	for (int i = 0; i < seqLength; i++) {
+		Serial.write(seq[i] >> 7);
+		Serial.write(seq[i] & 0x7F);
+	}
+
+	// SysEx end
+	Serial.write(0xF7);
 }
 
 void dumpPresetAsSysEx() {

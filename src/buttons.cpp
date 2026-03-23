@@ -759,6 +759,7 @@ void buttChanged(Button number, bool value) {
 						if (seqRec) {
 							if (seqLength < 16) {
 								seq[seqLength] = 255;
+								sendNRPN(NRPN_ARP_SET_STEP, (seqLength << 8) | 255);
 								seqLength++;
 								ledNumber(seqLength + 1);
 							}

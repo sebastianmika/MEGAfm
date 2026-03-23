@@ -15,6 +15,7 @@ void pedalUp();
 void pedalDown();
 void dumpPreset();
 void dumpPresetAsSysEx();
+void dumpArpAsSysEx();
 void resyncArpLfo();
 void sendControlChange(byte number, byte value, byte channel);
 void sendNoteOff(byte note, byte velocity, byte channel);

@@ -26,7 +26,7 @@ static byte lastCC[80];
 static int arpClockCounter;
 static byte syncLfoCounter;
 
-static bool arpClearFlag = false;
+static bool resetNextArpRecStep = false;
 
 void initLastCC() {
 	for (int i = 0; i < 80; i++) {
@@ -378,7 +378,6 @@ static void handleNoteOn(byte channel, byte note, byte velocity) {
 								heldKeys++;
 
 								if (heldKeys == 1) {
-									arpClearFlag = false;
 									clearNotes();
 									heldKeys = 1;
 								}
@@ -441,7 +440,6 @@ static void handleNoteOn(byte channel, byte note, byte velocity) {
 								heldKeys++;
 
 								if (heldKeys == 1) {
-									arpClearFlag = false;
 									clearNotes();
 									heldKeys = 1;
 								}
@@ -515,7 +513,6 @@ static void handleNoteOn(byte channel, byte note, byte velocity) {
 								heldKeys++;
 
 								if (heldKeys == 1) {
-									arpClearFlag = false;
 									clearNotes();
 									heldKeys = 1;
 								}
@@ -550,6 +547,10 @@ static void handleNoteOn(byte channel, byte note, byte velocity) {
 					}
 
 					if (seqRec) {
+						if (resetNextArpRecStep) {
+							seqLength = 0;
+							resetNextArpRecStep = false;
+						}
 						if (!seqLength)
 							rootNote1 = note;
 						seq[seqLength] = note - rootNote1 + 127;
@@ -557,11 +558,14 @@ static void handleNoteOn(byte channel, byte note, byte velocity) {
 							seq[seqLength]--;
 						}
 
-						seqLength++;
-						if (seqLength > 15)
-							seqLength = 0;
+						sendNRPN(NRPN_ARP_SET_STEP, (seqLength << 8) | seq[seqLength]);
 
-						ledNumber(seqLength + 1);
+						seqLength++;
+						if (seqLength > 15) {
+							ledNumber(1);
+							resetNextArpRecStep = true;
+						} else
+							ledNumber(seqLength + 1);
 
 						for (int i = 0; i < 12; i++) {
 							ym.noteOff(i);
@@ -1211,7 +1215,6 @@ void midiRead() {
 	while (Serial.available()) {
 		byte input = Serial.read();
 		if (thru) {
-
 			Serial.write(input);
 		}
 

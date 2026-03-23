@@ -381,6 +381,7 @@ const int16_t lfoRateLT[] = {
 #define NRPN_ARP_CLOCK_SYNC 301 // value: bool
 #define NRPN_ARP_RATE 302       // value: 0-255
 #define NRPN_ARP_RANGE 303      // value: 0-255
+#define NRPN_ARP_SET_STEP 304   // value: 8-bit step value, 4 bit step index
 // Vibrato
 #define NRPN_VIB_CLOCK_SYNC 500 // value: bool
 #define NRPN_VIB_RATE 501       // value: 0-255

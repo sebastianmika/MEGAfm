@@ -4,6 +4,7 @@
 #include "megafm.h"
 #include "FM.h"
 #include "buttons.h"
+#include "leds.h"
 
 void setThru() {
 	byte temp = EEPROM.read(3950);
@@ -39,6 +40,29 @@ void setArpClock() {
 	byte temp = EEPROM.read(3953);
 	bitWrite(temp, 4, arpClockEnable);
 	EEPROM.update(3953, temp);
+}
+
+void setArpStep(byte step, byte value) {
+	if (step > 15)
+		// Ignore errors
+		return;
+	if (step > 0)
+		// step[0] == 127 always = the note played
+		seq[step] = value;
+	if (step >= seqLength) {
+		for (int i = seqLength; i < step; i++) {
+			// Fill previous value if we extend the sequence
+			seq[i] = seq[seqLength - 1];
+		}
+		seqLength = step + 1;
+		digit(0, 17); // A(rp)
+		digit(1, 17); // A(ppend)
+	} else {
+		digit(0, 17); // A(rp)
+		digit(1, 16); // r(eplace)
+	}
+	lastNumber = -1;
+	showPresetNumberTimeout = 12000;
 }
 
 void setFatSpreadMode() {

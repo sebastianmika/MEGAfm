@@ -79,7 +79,11 @@ void handleNRPN(int msg, int int_val) {
 	if (idx >= 0)
 		lastNRPN[idx] = int_val;
 
-	if ((msg >= NRPN_LFO_SHAPE) && (msg <= NRPN_LFO_AT)) {
+	if (msg == NRPN_DUMP_CURRENT_SETTINGS) {
+		dumpPresetAsSysEx();
+		if (arpMode == kArpSequence1 || arpMode == kArpSequence2)
+			dumpArpAsSysEx();
+	} else if ((msg >= NRPN_LFO_SHAPE) && (msg <= NRPN_LFO_AT)) {
 		if ((msg >= NRPN_LFO_SHAPE) && (msg <= NRPN_LFO_SHAPE + 2)) {
 			// Shape LFO1: 100, LFO2: 101, LFO3: 102
 			selectedLfo = (byte)(msg - NRPN_LFO_SHAPE);
@@ -163,11 +167,11 @@ void handleNRPN(int msg, int int_val) {
 		// Set Fat Mode (0 = semitone, >0 = octave)
 		digit(0, 1);
 		if (bool_val) {
-			fatMode = FAT_MODE_SEMITONE;
-			digit(1, 5);
-		} else {
 			fatMode = FAT_MODE_OCTAVE;
 			digit(1, 27);
+		} else {
+			fatMode = FAT_MODE_SEMITONE;
+			digit(1, 5);
 		}
 		setFatMode();
 	} else if (msg == NRPN_SET_VOICE_MODE) {

@@ -712,15 +712,12 @@ void movedPot(byte number, byte data, bool isMidi) {
 
 						case KNOB_ALGO:
 							showPickupAnimation = false;
-							if (isMidi) {
-								data -= 1;
-							}
 							fmBase[42] = data;
 							updateFMifNecessary(42);
 							showNumber(42, data);
 							if (!isMidi) {
 								targetPot = 42;
-								sendCC(number, (1 + (data >> 5)));
+								sendCC(number, data >> 1);
 								sendNRPN(NRPN_ALGORITHM, data);
 							}
 							break; // algo

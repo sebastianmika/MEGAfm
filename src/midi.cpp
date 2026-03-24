@@ -1127,7 +1127,7 @@ void dumpPreset() {
 				sendCC(7, vol >> 1);
 				break; // volume //SEND FINE!!!!!!!!!!!!
 			case 4:
-				sendCC(number, (1 + (fmBase[42] >> 5)));
+				sendCC(number, fmBase[42] >> 1);
 				break; // algo
 			case 3:
 				sendCC(number, fmBase[43] >> 1);

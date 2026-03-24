@@ -343,6 +343,7 @@ const int16_t lfoRateLT[] = {
     3685, 3736, 3788, 3839, 3891, 3943, 3994, 4046, 4097};
 
 // NRPN message codes
+#define NRPN_DUMP_CURRENT_SETTINGS 10
 // LFO settings — add LFO index 0-2 for per-LFO variants
 #define NRPN_LFO_SHAPE 100      // value: 0-8 (see setLFOShape)
 #define NRPN_LFO_LOOPING 103    // value: bool

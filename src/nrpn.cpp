@@ -168,12 +168,14 @@ void handleNRPN(int msg, int int_val) {
 		digit(0, 1);
 		if (bool_val) {
 			fatMode = FAT_MODE_OCTAVE;
-			digit(1, 27);
+			digit(1, 27); // o(ctave)
 		} else {
 			fatMode = FAT_MODE_SEMITONE;
-			digit(1, 5);
+			digit(1, 5); // S(emitone)
 		}
 		setFatMode();
+		lastNumber = -1;
+		showPresetNumberTimeout = 12000;
 	} else if (msg == NRPN_SET_VOICE_MODE) {
 		// Set Voice Mode (0-5 = (Poly12, Wide6, DualCh3, Unison, Wide4, Wide3)
 		if (byte_val <= 5) {
@@ -201,6 +203,7 @@ void handleNRPN(int msg, int int_val) {
 		voiceHeld = true;
 		movedPot(KNOB_VOLUME, byte_val, 1);
 		voiceHeld = false;
+		movedFineKnob = false;
 	} else if (msg == NRPN_GLIDE) {
 		// Set glide (0-15)
 		// if (byte_val < 16) {

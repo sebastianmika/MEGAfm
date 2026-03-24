@@ -199,11 +199,9 @@ void dumpPresetAsSysEx() {
 	sysexWriteNRPN(NRPN_SET_MPE_MODE, mpe);                 // MPE mode
 	sysexWriteNRPN(NRPN_SET_FAT_SPREAD, fatSpreadMode);     // fat spread mode
 	sysexWriteNRPN(NRPN_SET_IGNORE_VOL, ignoreVolume);      // ignore preset volume
-	// fatMode: FAT_MODE_SEMITONE=false, FAT_MODE_OCTAVE=true.
-	// NRPN 207 handler: bool_val=true → semitone, bool_val=false → octave. So send !fatMode.
-	sysexWriteNRPN(NRPN_SET_FAT_MODE, !fatMode);
-	sysexWriteNRPN(NRPN_SET_VOICE_MODE, (byte)voiceMode); // voice mode (0-5)
-	sysexWriteNRPN(NRPN_SET_OCT_OFFSET, octOffset);       // octave offset (0-3)
+	sysexWriteNRPN(NRPN_SET_FAT_MODE, fatMode);             // fat mode (0=octave, 1=semitone)
+	sysexWriteNRPN(NRPN_SET_VOICE_MODE, (byte)voiceMode);   // voice mode (0-5)
+	sysexWriteNRPN(NRPN_SET_OCT_OFFSET, octOffset);         // octave offset (0-3)
 
 	// Arp; clock first to let the host know how to interpret the rate
 	sysexWriteNRPN(NRPN_ARP_CLOCK_SYNC, arpClockEnable); // arp MIDI clock sync

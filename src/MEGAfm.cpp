@@ -157,7 +157,7 @@ bool targetPresetFlasher;
 int scrollDelay, scrollCounter;
 byte noiseTableLength[3];
 // Buffer for sysex preset dumps.
-byte mem[3950];
+byte sysexBuffer[3950];
 int notey[12];
 byte arpMode, arpModeLast;
 bool looping[3];

@@ -9,7 +9,9 @@
 #include "sysex.h"
 
 int sysExDataIndex = 0;
-byte sysExData[MAX_SYSEX_DATA_LENGTH];
+bool _processingSysex = false;
+
+bool processingSysex() { return _processingSysex; }
 
 static void sysexWriteNRPN(int msg, int val) {
 	Serial.write(msg >> 7);   // CC 99 for NRPN parameter MSB
@@ -22,7 +24,7 @@ void sysExReset() { sysExDataIndex = 0; }
 
 void sysExAppendByte(byte b) {
 	if (sysExDataIndex < MAX_SYSEX_DATA_LENGTH) {
-		sysExData[sysExDataIndex++] = b;
+		sysexBuffer[sysExDataIndex++] = b;
 	} else {
 		sysExExitStatus(SYSEX_STATUS_BYTE_ERROR);
 	}
@@ -35,13 +37,19 @@ void sysExExitStatus(byte error) {
 	digit(1, error); // error code, 0=ok, 1=byte error, 2=header mismatch, 3=length error, 4=dump length error
 	lastNumber = -1;
 	showPresetNumberTimeout = 12000;
+	_processingSysex = false;
 }
 
 void handleIncomingSysEx() {
 	// Handle the received SysEx data in sysExData array with length sysExDataIndex
 
 	// Need at least seven bytes:
-	// 240 0 33 68 [91|93] [arpLen] [2*arpLen bytes for note offsets 0-255] [4*N bytes for 0<=N NRPN messages] 247
+	// 240 0 33 68 [91|93] [arpLen] [2*arpLen bytes for note offsets 0-255] [4*N bytes for 0<=N NRPN messages] 24
+
+	// Ensure we do not send midi or nrpn feedback on changes we make while processing the sysex message
+	// All exit paths from this function go through sysExExitStatus which sets processingSysex back to false.
+	_processingSysex = true;
+
 	if (sysExDataIndex < 7) {
 		sysExExitStatus(SYSEX_STATUS_LENGTH_ERROR);
 		digit(0, sysExDataIndex);
@@ -50,7 +58,7 @@ void handleIncomingSysEx() {
 
 	// check if it's a SysEx message for us ( - we do the same as the firmware and take the
 	// default from hex2sys = \x00\x21\x44 = 00 33 68)
-	if (sysExData[1] != 0 || sysExData[2] != 33 || sysExData[3] != 68) {
+	if (sysexBuffer[1] != 0 || sysexBuffer[2] != 33 || sysexBuffer[3] != 68) {
 		// not for us, ignore the rest of the message
 		sysExExitStatus(SYSEX_STATUS_HEADER_MISMATCH);
 		return;
@@ -58,8 +66,8 @@ void handleIncomingSysEx() {
 
 	byte arpLen = 0;
 
-	if (sysExData[4] == 91) {
-		arpLen = sysExData[5];
+	if (sysexBuffer[4] == 91) {
+		arpLen = sysexBuffer[5];
 
 		if (arpLen > 16 || sysExDataIndex < 7 + arpLen * 2 || (sysExDataIndex - 7 - 2 * arpLen) % 4 != 0) {
 			sysExExitStatus(SYSEX_STATUS_DUMP_LENGTH_ERROR);
@@ -68,31 +76,31 @@ void handleIncomingSysEx() {
 
 		seqLength = arpLen;
 		for (int i = 0; i < seqLength; i++) {
-			seq[i] = (sysExData[6 + i * 2] << 7) | sysExData[6 + i * 2 + 1];
+			seq[i] = (sysexBuffer[6 + i * 2] << 7) | sysexBuffer[6 + i * 2 + 1];
 		}
 
 		for (int i = 6 + arpLen * 2; i < sysExDataIndex - 1; i += 4) {
 			// Decode NRPN from byte MSB i and LSB i+1
-			int nrpn = (sysExData[i] << 7) | sysExData[i + 1];
+			int nrpn = (sysexBuffer[i] << 7) | sysexBuffer[i + 1];
 			// Decode value from byte MSB i+3 and LSB i+2
-			int value = (sysExData[i + 2] << 7) | sysExData[i + 3];
+			int value = (sysexBuffer[i + 2] << 7) | sysexBuffer[i + 3];
 			handleNRPN(nrpn, value);
 		}
 		sysExExitStatus(SYSEX_STATUS_OK);
-	} else if (sysExData[4] == 93) {
+	} else if (sysexBuffer[4] == 93) {
 		// Arp dump: payload is 1 byte length, followed by that many notes (2 bytes each MSB/LSB, 255=rest)
 		if (sysExDataIndex < 7) {
 			sysExExitStatus(SYSEX_STATUS_DUMP_LENGTH_ERROR);
 			return;
 		}
-		arpLen = sysExData[5];
+		arpLen = sysexBuffer[5];
 		if (arpLen > 16 || sysExDataIndex != 7 + arpLen * 2) {
 			sysExExitStatus(SYSEX_STATUS_DUMP_LENGTH_ERROR);
 			return;
 		}
 		seqLength = arpLen;
 		for (int i = 0; i < arpLen; i++) {
-			seq[i] = (sysExData[6 + i * 2] << 7) | sysExData[6 + i * 2 + 1];
+			seq[i] = (sysexBuffer[6 + i * 2] << 7) | sysexBuffer[6 + i * 2 + 1];
 		}
 		sysExExitStatus(SYSEX_STATUS_OK);
 	} else {

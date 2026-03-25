@@ -725,9 +725,9 @@ static void handleNoteOff(byte channel, byte note) {
 	}
 }
 
-void sendCCForce(byte number, int value) { sendControlChange(number, value, masterChannelOut); }
-
 void sendCC(byte number, int value) {
+	if (processingSysex())
+		return;
 
 	if (lastCC[number] != value) {
 		lastCC[number] = value;

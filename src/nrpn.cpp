@@ -9,6 +9,7 @@
 #include "nrpn.h"
 #include "setters.h"
 #include "preset.h"
+#include "sysex.h"
 
 int nrpn_msg = 0;
 int nrpn_data = 0;
@@ -51,6 +52,8 @@ void initLastNRPN() {
 }
 
 void sendNRPN(int msg, int value) {
+	if (processingSysex())
+		return;
 	int idx = nrpnIndex(msg);
 	if (idx >= 0 && lastNRPN[idx] == value)
 		return;

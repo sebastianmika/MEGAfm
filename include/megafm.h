@@ -117,7 +117,7 @@ extern byte finePot;
 extern int finerFine;      // more precise tuning
 extern bool movedFineKnob; // track if we adjusted tune to override glide knob for finer tuning
 
-extern byte mem[3950];
+extern byte sysexBuffer[3950];
 
 extern int notey[12];
 extern byte arpMode, arpModeLast;

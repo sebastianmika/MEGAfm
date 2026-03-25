@@ -8,6 +8,7 @@
 #include "midi.h"
 #include "nrpn.h"
 #include "setters.h"
+#include "preset.h"
 
 int nrpn_msg = 0;
 int nrpn_data = 0;
@@ -81,8 +82,12 @@ void handleNRPN(int msg, int int_val) {
 
 	if (msg == NRPN_DUMP_CURRENT_SETTINGS) {
 		dumpPresetAsSysEx();
-		if (arpMode == kArpSequence1 || arpMode == kArpSequence2)
-			dumpArpAsSysEx();
+	} else if (msg == NRPN_CHANGE_PROGRAM) {
+		if ((int_val >= 0) && (int_val < 600)) {
+			bank = int_val / 100;
+			preset = int_val % 100;
+			loadPreset();
+		}
 	} else if ((msg >= NRPN_LFO_SHAPE) && (msg <= NRPN_LFO_AT)) {
 		if ((msg >= NRPN_LFO_SHAPE) && (msg <= NRPN_LFO_SHAPE + 2)) {
 			// Shape LFO1: 100, LFO2: 101, LFO3: 102

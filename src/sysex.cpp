@@ -39,14 +39,10 @@ void sysExExitStatus(byte error) {
 
 void handleIncomingSysEx() {
 	// Handle the received SysEx data in sysExData array with length sysExDataIndex
-	//
-	// 240 0 33 68 [command] [payload bytes...] 247
-	//
-	// That 0 33 68 is the manufacturer ID (hex 00 21 44) has already
-	// been checked in midi.cpp before calling this function
 
-	// Need at least six bytes: start and end byte, 3 manufacturer, 1 command
-	if (sysExDataIndex < 6) {
+	// Need at least seven bytes:
+	// 240 0 33 68 [91|93] [arpLen] [2*arpLen bytes for note offsets 0-255] [4*N bytes for 0<=N NRPN messages] 247
+	if (sysExDataIndex < 7) {
 		sysExExitStatus(SYSEX_STATUS_LENGTH_ERROR);
 		digit(0, sysExDataIndex);
 		return;
@@ -60,13 +56,22 @@ void handleIncomingSysEx() {
 		return;
 	}
 
+	byte arpLen = 0;
+
 	if (sysExData[4] == 91) {
-		if ((sysExDataIndex - 6) % 4 != 0) {
-			// Invalid preset dump (NRPN messages are 4 bytes each)
+		arpLen = sysExData[5];
+
+		if (arpLen > 16 || sysExDataIndex < 7 + arpLen * 2 || (sysExDataIndex - 7 - 2 * arpLen) % 4 != 0) {
 			sysExExitStatus(SYSEX_STATUS_DUMP_LENGTH_ERROR);
 			return;
 		}
-		for (int i = 5; i < sysExDataIndex - 1; i += 4) {
+
+		seqLength = arpLen;
+		for (int i = 0; i < seqLength; i++) {
+			seq[i] = (sysExData[6 + i * 2] << 7) | sysExData[6 + i * 2 + 1];
+		}
+
+		for (int i = 6 + arpLen * 2; i < sysExDataIndex - 1; i += 4) {
 			// Decode NRPN from byte MSB i and LSB i+1
 			int nrpn = (sysExData[i] << 7) | sysExData[i + 1];
 			// Decode value from byte MSB i+3 and LSB i+2
@@ -80,13 +85,13 @@ void handleIncomingSysEx() {
 			sysExExitStatus(SYSEX_STATUS_DUMP_LENGTH_ERROR);
 			return;
 		}
-		byte len = sysExData[5];
-		if (len > 16 || sysExDataIndex != 7 + len * 2) {
+		arpLen = sysExData[5];
+		if (arpLen > 16 || sysExDataIndex != 7 + arpLen * 2) {
 			sysExExitStatus(SYSEX_STATUS_DUMP_LENGTH_ERROR);
 			return;
 		}
-		seqLength = len;
-		for (int i = 0; i < len; i++) {
+		seqLength = arpLen;
+		for (int i = 0; i < arpLen; i++) {
 			seq[i] = (sysExData[6 + i * 2] << 7) | sysExData[6 + i * 2 + 1];
 		}
 		sysExExitStatus(SYSEX_STATUS_OK);
@@ -116,9 +121,6 @@ void dumpArpAsSysEx() {
 }
 
 void dumpPresetAsSysEx() {
-	if (thru)
-		return;
-
 	// Total NRPN count breakdown:
 	//   15  LFO settings (shape/looping/retrig/clock/vel-mod-at)
 	//   13  Knob parameters (fine, glide, LFO rates/depths, fat, volume, feedback, algo, notePriority)
@@ -137,6 +139,17 @@ void dumpPresetAsSysEx() {
 	Serial.write(33);
 	Serial.write(68);
 	Serial.write(92);
+
+	// First the arp data
+
+	// Payload: length (1 byte) + note data (2*length bytes)
+	Serial.write(seqLength);
+	for (int i = 0; i < seqLength; i++) {
+		Serial.write(seq[i] >> 7);
+		Serial.write(seq[i] & 0x7F);
+	}
+
+	// Then the NRPN data for all the other settings
 
 	// LFO shapes (100-102)
 	for (int i = 0; i < 3; i++) {

@@ -408,8 +408,6 @@ void loadPreset() {
 	fmResetValues();
 	// dumpPreset();
 	dumpPresetAsSysEx();
-	if (arpMode == kArpSequence1 || arpMode == kArpSequence2)
-		dumpArpAsSysEx();
 	startTimer();
 
 	// make sure fmBaseLast != fmBase (to reset the engine)

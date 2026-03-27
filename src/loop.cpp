@@ -398,6 +398,7 @@ void loop() {
 		if ((resetHeld) && (!shuffleTimer)) {
 			resetHeld = false;
 			shuffle();
+			dumpPresetAsSysEx();
 			shuffleCounter = 20;
 		}
 		fmUpdate();

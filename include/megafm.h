@@ -142,7 +142,6 @@ extern float lfoStepF[3];
 extern bool arpModeHeld;
 extern byte inputChannel;
 extern bool changedChannel;
-extern bool pedalOff[12];
 extern bool emptyStack;
 extern bool chordNotes[128];
 extern bool heldNotes[128];
@@ -171,7 +170,6 @@ extern bool sync;
 extern bool ab;
 extern int potLast[64];
 extern int lastMpeVoice;
-// extern int pressureCounter; // unused
 extern int lfoDepth[3];
 extern bool buttLast[19];
 extern byte keyPressure[128];
@@ -219,7 +217,6 @@ extern int vibPitch;
 extern byte presetTp;
 extern int vibCounter;
 extern int shuffleTimer;
-// extern byte seed; // unused
 
 extern byte potClock;
 extern bool mpe;

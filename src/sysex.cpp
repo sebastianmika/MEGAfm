@@ -26,7 +26,7 @@ void sysExAppendByte(byte b) {
 	if (sysExDataIndex < MAX_SYSEX_DATA_LENGTH) {
 		sysexBuffer[sysExDataIndex++] = b;
 	} else {
-		sysExExitStatus(SYSEX_STATUS_BYTE_ERROR);
+		sysExExitStatus(SYSEX_STATUS_LENGTH_ERROR);
 	}
 }
 

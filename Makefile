@@ -15,14 +15,8 @@ check_fmt:
 firmware.syx: .pio/build/ATmega1284P/firmware.hex
 	PYTHONPATH=3rdparty python2 3rdparty/tools/hex2sysex/hex2sysex.py -s -o $@ -v 0x7f $<
 
-test: test_sysex
-	./test_sysex
-
-test_sysex: test_sysex.cpp
-	$(CXX) -std=c++17 -Wall -Wextra -o $@ $<
-
 clean:
 	platformio run -t clean
-	rm -f firmware.syx test_sysex
+	rm -f firmware.syx
 
-.PHONY: clean fmt check_fmt test
+.PHONY: clean fmt check_fmt

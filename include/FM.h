@@ -24,9 +24,6 @@ void fm(byte number, byte data);
 void fmMpe(byte channel, byte number, byte data);
 void op(byte number);
 void setupFM();
-// void WriteYMData(byte data);           // unused - implementation is commented out
-// float noteToFrequency(uint8_t note);   // unused - implementation is commented out
-// void setFrequency(byte chan, float frequency); // unused - implementation is commented out
 void updateSSEG(byte op);
 
 #endif // MEGAFM_CMAKE_FM_H

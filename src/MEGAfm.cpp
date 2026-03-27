@@ -186,7 +186,6 @@ bool newFat;
 /**
  * Whether to turn off the voice slot when the pedal is lifted.
  */
-bool pedalOff[12];
 bool pedal;
 /**
  * Used to track if any notes are stored in the arpeggiator stack/array (true=empty).
@@ -234,7 +233,6 @@ bool linked[3][51];
 byte octOffset;
 byte lfoRandom[3][32];
 int displayFreeze;
-// int pressureCounter; // unused
 int polyPressure[12];
 int polyVel[12];
 int showPresetNumberTimeout; // we show the preset number when this expires (after moving a knob or fader);
@@ -284,7 +282,6 @@ int vibPitch;
 byte presetTp;
 int vibCounter;
 int shuffleTimer;
-// byte seed; // unused - only written to, never read for any purpose
 byte potClock;
 bool mpe;
 

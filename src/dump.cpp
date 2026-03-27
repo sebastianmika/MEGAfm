@@ -128,8 +128,6 @@ void recieveDump() {
 		}
 	}
 
-	// byte ledLast; // unused
-
 	ledNumber(1);
 
 	byte count1 = 0;

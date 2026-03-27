@@ -272,7 +272,6 @@ static void handleNoteOff(byte channel, byte note);
 static MidiPedalAdapter pedal_adapter(handleNoteOn, handleNoteOff);
 
 static void handleNoteOn(byte channel, byte note, byte velocity) {
-	// byte distanceFromNewNote; // unused
 	if (channel == inputChannel)
 		heldNotes[note] = true;
 
@@ -685,7 +684,6 @@ static void handleNoteOff(byte channel, byte note) {
 
 								for (int i = 0; i < 12; i++) {
 									ym.noteOff(i);
-									pedalOff[i] = 1; // ToDo: not sure this is being used
 								}
 
 							} else {
@@ -1224,8 +1222,8 @@ void midiRead() {
 				// In SysEx and receivd Sysex end; handle data and end sysex mode
 				sysExAppendByte(247);
 				handleIncomingSysEx();
-			} else if (mStatus == 8) {
-				// In SysEx but received a non-F7 status byte; invalid message, exit SysEx mode
+			} else if ((mStatus == 8) && ((input != 248) || (input != 250) || (input != 251) || (input != 252))) {
+				// In SysEx but received a non-F7 status byte that is not clock, start, continue or stop; this is an error
 				sysExExitStatus(SYSEX_STATUS_BYTE_ERROR);
 			}
 			switch (input) {
@@ -1284,9 +1282,7 @@ void midiRead() {
 					sysExReset();
 					sysExAppendByte(240);
 					break;
-				// case 247:  // F7
-				//  SysEx end; handeled above
-				// 	break;
+				// case 247=F7, end of sysex, is handeled above
 				default:
 					mStatus = 0;
 					mData = 255;

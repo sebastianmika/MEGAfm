@@ -367,7 +367,6 @@ void setup() {
 	Serial.begin(31250);
 	// midiSetup();
 
-	initLastCC();
 	initLastNRPN();
 
 	mux(13);

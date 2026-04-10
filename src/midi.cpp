@@ -21,18 +21,10 @@ static byte voiceSlot;
 static bool ch3Alt;
 static float vibIndexF;
 
-static byte lastCC[80];
-
 static int arpClockCounter;
 static byte syncLfoCounter;
 
 static bool resetNextArpRecStep = false;
-
-void initLastCC() {
-	for (int i = 0; i < 80; i++) {
-		lastCC[i] = 255;
-	}
-}
 
 void resyncArpLfo() {
 	if (arpClockEnable) {
@@ -723,17 +715,6 @@ static void handleNoteOff(byte channel, byte note) {
 	}
 }
 
-void sendCC(byte number, int value) {
-	if (processingSysex())
-		return;
-
-	if (lastCC[number] != value) {
-		lastCC[number] = value;
-		rightDot();
-		sendControlChange(number, value, masterChannelOut);
-	}
-}
-
 byte lastData1, lastData2;
 
 void handleControlChange(byte channel, byte number, byte val) {
@@ -742,9 +723,6 @@ void handleControlChange(byte channel, byte number, byte val) {
 	// Update the deduplication cache with the received value so that a subsequent
 	// sendCC() with the same value is suppressed — prevents echoing a received
 	// message back to the sender.
-	if (number < 80)
-		lastCC[number] = val;
-
 	if (number == 74) {
 
 		if (mpe && channel > 1 && channel < 14) {
@@ -1014,156 +992,6 @@ void handleControlChange(byte channel, byte number, byte val) {
 		}
 		lastData1 = number;
 		lastData2 = val;
-	}
-}
-
-void dumpPreset() {
-	for (int number = 0; number < 58; number++) {
-		switch (number) {
-			// OP1
-			case 18:
-				sendCC(number, fmBase[0] >> 1);
-				break; // detune
-			case 27:
-				sendCC(number, fmBase[1] >> 1);
-				break; // multiple
-			case 19:
-				sendCC(number, fmBase[2] >> 1);
-				break; // op level
-			case 29:
-				sendCC(number, fmBase[4] >> 1);
-				break; // attack
-			case 21:
-				sendCC(number, fmBase[5] >> 1);
-				break; // decay1
-			case 25:
-				sendCC(number, fmBase[7] >> 1);
-				break; // sustain
-			case 17:
-				sendCC(number, fmBase[6] >> 1);
-				break; // sustain rate
-			case 30:
-				sendCC(number, fmBase[8] >> 1);
-				break; // release
-			// OP2
-			case 31:
-				sendCC(number, fmBase[18] >> 1);
-				break; // detune
-			case 32:
-				sendCC(number, fmBase[19] >> 1);
-				break; // multiple
-			case 40:
-				sendCC(number, fmBase[20] >> 1);
-				break; // op level
-			case 36:
-				sendCC(number, fmBase[22] >> 1);
-				break; // attack
-			case 44:
-				sendCC(number, fmBase[23] >> 1);
-				break; // decay1
-			case 42:
-				sendCC(number, fmBase[25] >> 1);
-				break; // sustain
-			case 34:
-				sendCC(number, fmBase[24] >> 1);
-				break; // sustain rate
-			case 11:
-				sendCC(number, fmBase[26] >> 1);
-				break; // release
-			// OP3
-			case 20:
-				sendCC(number, fmBase[9] >> 1);
-				break; // detune
-			case 24:
-				sendCC(number, fmBase[10] >> 1);
-				break; // multiple
-			case 16:
-				sendCC(number, fmBase[11] >> 1);
-				break; // op level
-			case 8:
-				sendCC(49, fmBase[13] >> 1);
-				break; // attack
-			case 0:
-				sendCC(50, fmBase[14] >> 1);
-				break; // decay1
-			case 7:
-				sendCC(51, fmBase[16] >> 1);
-				break; // sustain
-			case 45:
-				sendCC(number, fmBase[15] >> 1);
-				break; // sustain rate
-			case 37:
-				sendCC(number, fmBase[17] >> 1);
-				break; // release
-			// OP4
-			case 47:
-				sendCC(number, fmBase[27] >> 1);
-				break; // detune
-			case 39:
-				sendCC(number, fmBase[28] >> 1);
-				break; // multiple
-			case 38:
-				sendCC(number, fmBase[29] >> 1);
-				break; // op level
-			case 46:
-				sendCC(number, fmBase[31] >> 1);
-				break; // attack
-			case 33:
-				sendCC(number, fmBase[32] >> 1);
-				break; // decay1
-			case 41:
-				sendCC(number, fmBase[34] >> 1);
-				break; // sustain
-			case 43:
-				sendCC(number, fmBase[33] >> 1);
-				break; // sustain rate
-			case 35:
-				sendCC(number, fmBase[35] >> 1);
-				break; // release
-
-			case 1:
-				sendCC(7, vol >> 1);
-				break; // volume //SEND FINE!!!!!!!!!!!!
-			case 4:
-				sendCC(number, fmBase[42] >> 1);
-				break; // algo
-			case 3:
-				sendCC(number, fmBase[43] >> 1);
-				break; // feedback
-			case 28:
-				sendCC(number, fmBase[50] >> 1);
-				break; // fat 1-127 // SEND GLIDE!!!!!!!!!!!!
-			case 15:
-				sendCC(number, fmBase[36] >> 1);
-				break; // lfo 1 rate
-			case 12:
-				sendCC(number, fmBase[37] >> 1);
-				break; // lfo 1 depth
-			case 10:
-				sendCC(number, fmBase[38] >> 1);
-				break; // lfo 2 rate
-			case 9:
-				sendCC(number, fmBase[39] >> 1);
-				break; // lfo 2 depth
-			case 14:
-				sendCC(number, fmBase[40] >> 1);
-				break; // lfo 3 rate
-			case 2:
-				sendCC(number, fmBase[41] >> 1);
-				break; // lfo 3 depth
-			case 6:
-				sendCC(number, fmBase[46] >> 1);
-				break; /// arp rate
-			case 5:
-				sendCC(number, fmBase[47] >> 1);
-				break; // arp range
-			case 48:
-				sendCC(number, fmBase[48] >> 1);
-				break; // vibrato rate WAS 7
-			case 13:
-				sendCC(number, fmBase[49] >> 1);
-				break; // vibrato depth
-		}
 	}
 }
 

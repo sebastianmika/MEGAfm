@@ -703,7 +703,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 									ledNumber(data >> 2);
 									volumeCounter = 20;
 									if (!isMidi) {
-										sendCC(7, data >> 1);
 										sendNRPN(NRPN_VOLUME, data);
 									}
 								}
@@ -717,7 +716,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showNumber(42, data);
 							if (!isMidi) {
 								targetPot = 42;
-								sendCC(number, data >> 1);
 								sendNRPN(NRPN_ALGORITHM, data);
 							}
 							break; // algo
@@ -729,7 +727,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showNumber(43, data);
 							if (!isMidi) {
 								targetPot = 43;
-								sendCC(number, (data >> 1));
 								sendNRPN(NRPN_FEEDBACK, data);
 							}
 							break; // feedback
@@ -758,7 +755,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 									ledNumber(data >> 2);
 									if (!isMidi) {
 										targetPot = 50;
-										sendCC(number, data >> 1);
 										sendNRPN(NRPN_FAT, data);
 									}
 								}
@@ -780,7 +776,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 								updateDisplayLFOWhenSynced(data);
 								if (!isMidi) {
 									targetPot = 36;
-									sendCC(number, data >> 1);
 									sendNRPN(NRPN_LFO1_RATE, data);
 								}
 							}
@@ -793,7 +788,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showNumber(37, data);
 							if (!isMidi) {
 								targetPot = 37;
-								sendCC(number, data >> 1);
 								sendNRPN(NRPN_LFO1_DEPTH, data);
 							}
 							break; // lfo 1 depth
@@ -810,7 +804,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 								updateDisplayLFOWhenSynced(data);
 								if (!isMidi) {
 									targetPot = 38;
-									sendCC(number, data >> 1);
 									sendNRPN(NRPN_LFO2_RATE, data);
 								}
 							}
@@ -823,7 +816,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showNumber(39, data);
 							if (!isMidi) {
 								targetPot = 39;
-								sendCC(number, data >> 1);
 								sendNRPN(NRPN_LFO2_DEPTH, data);
 							}
 							break; // lfo 2 depth
@@ -845,7 +837,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 								updateDisplayLFOWhenSynced(data);
 								if (!isMidi) {
 									targetPot = 40;
-									sendCC(number, data >> 1);
 									sendNRPN(NRPN_LFO3_RATE, data);
 								}
 							}
@@ -858,7 +849,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showNumber(41, data);
 							if (!isMidi) {
 								targetPot = 41;
-								sendCC(number, data >> 1);
 								sendNRPN(NRPN_LFO3_DEPTH, data);
 							}
 							break; // lfo 3 depth
@@ -875,7 +865,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 							if (!isMidi) {
 								targetPot = 46;
-								sendCC(number, data >> 1);
 								sendNRPN(NRPN_ARP_RATE, data);
 							}
 							break; /// arp rate
@@ -886,7 +875,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showNumber(47, data);
 							if (!isMidi) {
 								targetPot = 47;
-								sendCC(number, data >> 1);
 								sendNRPN(NRPN_ARP_RANGE, data);
 							}
 							break; // arp range
@@ -902,7 +890,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 							}
 							if (!isMidi) {
 								targetPot = 48;
-								sendCC(number, data >> 1);
 								sendNRPN(NRPN_VIB_RATE, data);
 							}
 							break; // vibrato rate WAS 7
@@ -913,7 +900,6 @@ void movedPot(byte number, byte data, bool isMidi) {
 							showNumber(49, data);
 							if (!isMidi) {
 								targetPot = 49;
-								sendCC(number, data >> 1);
 								sendNRPN(NRPN_VIB_DEPTH, data);
 							}
 							break; // vibrato depth

@@ -406,7 +406,6 @@ void loadPreset() {
 	showVoiceMode(voiceMode);
 	Serial.begin(31250);
 	fmResetValues();
-	// dumpPreset();
 	dumpPresetAsSysEx();
 	startTimer();
 

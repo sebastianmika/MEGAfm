@@ -720,9 +720,6 @@ byte lastData1, lastData2;
 void handleControlChange(byte channel, byte number, byte val) {
 	byte temp;
 
-	// Update the deduplication cache with the received value so that a subsequent
-	// sendCC() with the same value is suppressed — prevents echoing a received
-	// message back to the sender.
 	if (number == 74) {
 
 		if (mpe && channel > 1 && channel < 14) {

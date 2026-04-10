@@ -1048,7 +1048,8 @@ void midiRead() {
 				sysExAppendByte(247);
 				handleIncomingSysEx();
 			} else if ((mStatus == 8) && ((input != 248) || (input != 250) || (input != 251) || (input != 252))) {
-				// In SysEx but received a non-F7 status byte that is not clock, start, continue or stop; this is an error
+				// In SysEx but received a non-F7 status byte that is not clock, start, continue or stop; this is an
+				// error
 				sysExExitStatus(SYSEX_STATUS_BYTE_ERROR);
 			}
 			switch (input) {

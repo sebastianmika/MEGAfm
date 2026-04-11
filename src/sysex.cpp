@@ -203,9 +203,9 @@ void dumpPresetAsSysEx() {
 	sysexWriteNRPN(NRPN_LFO3_DEPTH, fmBase[41]); // LFO3 depth
 
 	// Fat, Volume, Feedback, Algorithm
-	// volume: movedPot(KNOB_VOLUME, data) stores lastVol = 128-(data>>1), so data = (128-lastVol)<<1
+	// volume: movedPot(KNOB_VOLUME, data) stores vol = 128-(data>>1), so data = (128-vol)<<1
 	sysexWriteNRPN(NRPN_FAT, fmBase[50]);
-	sysexWriteNRPN(NRPN_VOLUME, (128 - lastVol) << 1);
+	sysexWriteNRPN(NRPN_VOLUME, (128 - vol) << 1);
 	sysexWriteNRPN(NRPN_FEEDBACK, fmBase[43]);
 	sysexWriteNRPN(NRPN_ALGORITHM, fmBase[42]);
 

@@ -14,6 +14,9 @@ jobs:
         with:
           load: true
           tags: megafm
+      - name: DEBUG
+        run: |
+          docker run -v $(pwd):/workspace -w /workspace --rm megafm bash -c "echo \$PWD && ls -ltr"
       - name: Check Format
         run: |
           docker run -v $(pwd):/workspace -w /workspace --rm megafm make check_fmt

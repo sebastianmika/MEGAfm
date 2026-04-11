@@ -16,10 +16,10 @@ jobs:
           tags: megafm
       - name: Check Format
         run: |
-          docker run -v $(pwd):/app -w /app --rm megafm make check_fmt
+          docker run -v $(pwd):/workspace -w /workspace --rm megafm make check_fmt
       - name: Build Firmware
         run: |
-          docker run -v $(pwd):/app -w /app --rm megafm make firmware.syx
+          docker run -v $(pwd):/workspace -w /workspace --rm megafm make firmware.syx
       - name: Extract version from constants.h
         id: version
         uses: actions/github-script@v7

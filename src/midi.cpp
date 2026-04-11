@@ -14,7 +14,6 @@
 #include "buttons.h"
 #include "midi_pedal.hpp"
 #include "FM.h"
-#include "ISR.h"
 #include "setters.h"
 
 static byte voiceSlot;

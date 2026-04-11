@@ -4,7 +4,7 @@ on: [pull_request]
 
 jobs:
   build:
-    name: Compile firmware
+    name: Build Firmware
     runs-on: ubuntu-latest
     steps:
       - name: Set up docker buildx
@@ -13,7 +13,6 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           load: true
-          push: false
           tags: megafm
       - name: Check Format
         run: |

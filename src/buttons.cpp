@@ -844,7 +844,7 @@ void buttChanged(Button number, bool value) {
 							if (!shuffled) {
 								if (!resetFunction) {
 									loadZero();
-									dumpArpAsSysEx();
+									dumpPresetAsSysEx();
 									digit(0, 14);
 									digit(1, 0);
 								} else {

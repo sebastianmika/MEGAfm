@@ -68,7 +68,7 @@ void sendNRPN(int msg, int value) {
 
 void handleNRPN(int msg, int int_val) {
 	// NRPN values are sent as 14 bit values, but we only mostly only use the lower 8 bits
-	byte byte_val = (byte) (int_val & 0xFF);
+	byte byte_val = (byte)(int_val & 0xFF);
 	bool bool_val = (int_val > 0);
 
 	// (temporarily) disable pickup mode

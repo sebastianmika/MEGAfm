@@ -213,16 +213,16 @@ void dumpPresetAsSysEx() {
 	sysexWriteNRPN(NRPN_NOTE_PRIORITY, notePriority);
 
 	// Global settings
-	sysexWriteNRPN(NRPN_SET_BRIGHTNESS, EEPROM.read(3965)); // brightness (0-15)
-	sysexWriteNRPN(NRPN_SET_MIDI_THRU, thru);               // MIDI thru
+	sysexWriteNRPN(NRPN_SET_BRIGHTNESS, EEPROM.read(3965));  // brightness (0-15)
+	sysexWriteNRPN(NRPN_SET_MIDI_THRU, thru);                // MIDI thru
 	sysexWriteNRPN(NRPN_SET_PICKUP_MODE, EEPROM.read(3954)); // pickup mode
-	sysexWriteNRPN(NRPN_SET_STEREO_CH3, stereoCh3);         // stereo ch3
-	sysexWriteNRPN(NRPN_SET_MPE_MODE, mpe);                 // MPE mode
-	sysexWriteNRPN(NRPN_SET_FAT_SPREAD, fatSpreadMode);     // fat spread mode
-	sysexWriteNRPN(NRPN_SET_IGNORE_VOL, ignoreVolume);      // ignore preset volume
-	sysexWriteNRPN(NRPN_SET_FAT_MODE, fatMode);             // fat mode (0=octave, 1=semitone)
-	sysexWriteNRPN(NRPN_SET_VOICE_MODE, (byte)voiceMode);   // voice mode (0-5)
-	sysexWriteNRPN(NRPN_SET_OCT_OFFSET, octOffset);         // octave offset (0-3)
+	sysexWriteNRPN(NRPN_SET_STEREO_CH3, stereoCh3);          // stereo ch3
+	sysexWriteNRPN(NRPN_SET_MPE_MODE, mpe);                  // MPE mode
+	sysexWriteNRPN(NRPN_SET_FAT_SPREAD, fatSpreadMode);      // fat spread mode
+	sysexWriteNRPN(NRPN_SET_IGNORE_VOL, ignoreVolume);       // ignore preset volume
+	sysexWriteNRPN(NRPN_SET_FAT_MODE, fatMode);              // fat mode (0=octave, 1=semitone)
+	sysexWriteNRPN(NRPN_SET_VOICE_MODE, (byte)voiceMode);    // voice mode (0-5)
+	sysexWriteNRPN(NRPN_SET_OCT_OFFSET, octOffset);          // octave offset (0-3)
 
 	// Arp; clock first to let the host know how to interpret the rate
 	sysexWriteNRPN(NRPN_ARP_CLOCK_SYNC, arpClockEnable); // arp MIDI clock sync

@@ -88,6 +88,10 @@ void finishSetup() {
 
 void showArpMode() {
 	switch (arpMode) {
+		case kArpOff:
+			digit(0, 0);
+			digit(1, 12);
+			break; // off
 		case kArpUp:
 			digit(0, 13);
 			digit(1, 14);
@@ -117,7 +121,7 @@ void showArpMode() {
 			digit(1, 2);
 			break; // s2
 	}
-	if (arpMode) {
+	if (arpMode > 0) {
 		ledSet(LED_ARP_MODE, 1);
 	} else {
 		ledSet(LED_ARP_MODE, 0);
@@ -840,6 +844,7 @@ void buttChanged(Button number, bool value) {
 							if (!shuffled) {
 								if (!resetFunction) {
 									loadZero();
+									dumpArpAsSysEx();
 									digit(0, 14);
 									digit(1, 0);
 								} else {

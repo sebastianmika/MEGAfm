@@ -746,7 +746,7 @@ void movedPot(byte number, byte data, bool isMidi) {
 									glide = data >> 4;
 									updateGlideIncrements();
 									fineChanged = true;
-									ledNumber(data >> 2);
+									ledNumber(data >> 4);
 									if (!isMidi)
 										sendNRPN(NRPN_GLIDE, glide << 4);
 								} else {

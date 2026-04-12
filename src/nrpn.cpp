@@ -68,7 +68,7 @@ void sendNRPN(int msg, int value) {
 
 void handleNRPN(int msg, int int_val) {
 	// NRPN values are sent as 14 bit values, but we only mostly only use the lower 8 bits
-	byte byte_val = (byte)int_val;
+	byte byte_val = (byte) (int_val & 0xFF);
 	bool bool_val = (int_val > 0);
 
 	// (temporarily) disable pickup mode
@@ -147,8 +147,9 @@ void handleNRPN(int msg, int int_val) {
 		setThru();
 		showOnOff(thru);
 	} else if (msg == NRPN_SET_PICKUP_MODE) {
-		// Set Pickup Mide (0 = off, >0 = on)
+		// Set Pickup Mode (0 = off, >0 = on)
 		pickupMode = bool_val;
+		oldPickupMode = pickupMode;
 		setPickupMode();
 		showOnOff(pickupMode);
 	} else if (msg == NRPN_SET_STEREO_CH3) {
@@ -213,12 +214,6 @@ void handleNRPN(int msg, int int_val) {
 		voiceHeld = false;
 		movedFineKnob = false;
 	} else if (msg == NRPN_GLIDE) {
-		// Set glide (0-15)
-		// if (byte_val < 16) {
-		// 	glide = byte_val >> 3;
-		// 	updateGlideIncrements();
-		// 	ledNumber(byte_val);
-		// }
 		voiceHeld = true;
 		movedPot(KNOB_FAT, byte_val, 1);
 		voiceHeld = false;
@@ -257,7 +252,7 @@ void handleNRPN(int msg, int int_val) {
 		setNotePriority();
 	} else if (msg == NRPN_ARP_MODE) {
 		if (byte_val < 8) {
-			arpMode = ArpMode(byte_val);
+			arpMode = byte_val;
 			showArpMode();
 			resetVoices();
 		}

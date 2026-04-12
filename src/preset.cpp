@@ -19,7 +19,7 @@ void loadZero() {
 	bank = 0;
 	presetTp = preset;
 	preset = 0;
-	loadPreset();
+	loadPreset(true);
 	preset = presetTp;
 	bank = bankTp;
 }
@@ -32,6 +32,7 @@ void panel() {
 	muxChannel = 16;
 	digit(0, 14);
 	digit(1, 17);
+	dumpArpAsSysEx();
 	delay(500);
 }
 
@@ -62,7 +63,7 @@ void clearSSEG(bool allBanks) {
 	}
 }
 
-void loadPreset() {
+void loadPreset(bool inLoadZero) {
 	if (pickupMode) {
 		for (int i = 0; i < 49; i++) {
 			pickup[i] = 0;
@@ -406,7 +407,8 @@ void loadPreset() {
 	showVoiceMode(voiceMode);
 	Serial.begin(31250);
 	fmResetValues();
-	dumpPresetAsSysEx();
+	if (!inLoadZero)
+		dumpPresetAsSysEx();
 	startTimer();
 
 	// make sure fmBaseLast != fmBase (to reset the engine)

@@ -51,7 +51,7 @@ bool showPickupAnimation;
 bool pickupAnimationNewFrame;
 // Whether the knobs/sliders should use 'pickup' behavior
 // Used in: buttons.cpp, megafm.cpp, pots.cpp
-bool pickupMode = true;
+bool pickupMode;
 // When pickup mode is active we set this high when the preset value has been reached (picked up) after a preset change.
 // Used in: pickup.cpp, pots.cpp, preset.cpp
 bool pickup[49];
@@ -384,7 +384,6 @@ void setup() {
 		newWide = false;
 		EEPROM.update(3969, 82);
 
-		loadPreset();
 		eWrite(69, 69);
 		if (eRead(69) != 69) {
 
@@ -554,7 +553,6 @@ void setup() {
 	}
 
 	if (!sendReceive) {
-		loadPreset();
 		loadPreset();
 	}
 }
